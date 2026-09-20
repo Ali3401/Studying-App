@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en" data-theme="midnight">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5" />
+<meta name="description" content="Lucid — a calm, beautiful home for your study notes. Paste, import, highlight, and study." />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#0e1117" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Lucid" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Lucid — Study Notes</title>
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="./assets/icons/icon-180.png" />
+<link rel="stylesheet" href="./styles/tokens.css" />
+<link rel="stylesheet" href="./styles/base.css" />
+<link rel="stylesheet" href="./styles/icons.css" />
+<link rel="stylesheet" href="./styles/components.css" />
+<link rel="stylesheet" href="./styles/library.css" />
+<link rel="stylesheet" href="./styles/reader.css" />
+<link rel="stylesheet" href="./styles/editor.css" />
+<link rel="stylesheet" href="./styles/panels.css" />
+<link rel="stylesheet" href="./styles/print.css" media="print" />
+</head>
+<body>
+<div id="boot" class="boot">
+  <div class="boot-mark" aria-hidden="true"></div>
+  <p class="boot-text">Lucid</p>
+</div>
+
+<div id="app" class="app" hidden>
+  <!-- ============ LIBRARY ============ -->
+  <section class="view view-library" data-view="library" hidden>
+    <header class="lib-head">
+      <div class="lib-head-top">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">Lucid</span>
+        </div>
+        <div class="lib-head-actions">
+          <button class="btn btn-ghost" data-act="open-search" title="Search (/)"><span class="i" data-icon="search"></span><span class="lbl">Search</span></button>
+          <button class="btn btn-ghost" data-act="open-study-all" title="Study all due cards"><span class="i" data-icon="cards"></span><span class="lbl">Study</span></button>
+          <button class="btn btn-ghost" data-act="open-settings" title="Appearance &amp; settings (⌘,)"><span class="i" data-icon="sliders"></span><span class="lbl">Appearance</span></button>
+          <button class="btn btn-ghost" data-act="open-guide" title="AI format guide"><span class="i" data-icon="sparkle"></span><span class="lbl">AI Guide</span></button>
+        </div>
+      </div>
+      <div class="lib-hero">
+        <h1 class="lib-title" id="lib-greeting">Your library</h1>
+        <p class="lib-sub" id="lib-stats">—</p>
+      </div>
+      <div class="lib-toolbar">
+        <div class="field search-field">
+          <span class="i" data-icon="search" aria-hidden="true"></span>
+          <input type="search" id="lib-search" placeholder="Search notes, headings, highlights…" autocomplete="off" spellcheck="false" />
+          <kbd class="field-kbd">/</kbd>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <div class="seg" role="group" aria-label="Sort">
+          <select id="lib-sort" class="select" aria-label="Sort notes">
+            <option value="updated">Recently edited</option>
+            <option value="opened">Recently opened</option>
+            <option value="created">Newest</option>
+            <option value="title">Title A–Z</option>
+            <option value="subject">Subject</option>
+            <option value="progress">Least read</option>
+          </select>
+        </div>
+        <div class="seg" role="group" aria-label="Layout">
+          <button class="seg-btn is-on" data-layout="grid" title="Grid"><span class="i" data-icon="grid"></span></button>
+          <button class="seg-btn" data-layout="list" title="List"><span class="i" data-icon="list"></span></button>
+        </div>
+      </div>
+      <div class="chips" id="lib-subjects"></div>
+    </header>
+
+    <div class="lib-body">
+      <div class="lib-empty" id="lib-empty" hidden>
+        <div class="empty-art" aria-hidden="true"></div>
+        <h2>Nothing here yet</h2>
+        <p>Paste a summary from Claude, or import a PDF, PowerPoint or Word file. Lucid turns it into something you actually want to read.</p>
+        <div class="empty-actions">
+          <button class="btn btn-primary" data-act="new-paste"><span class="i" data-icon="plus"></span> Paste a summary</button>
+          <button class="btn" data-act="open-import"><span class="i" data-icon="upload"></span> Import a file</button>
+          <button class="btn btn-ghost" data-act="load-sample"><span class="i" data-icon="sparkle"></span> Load a sample note</button>
+        </div>
+      </div>
+      <div class="cards" id="lib-cards" data-layout="grid"></div>
+    </div>
+
+    <div class="fab-stack">
+      <button class="fab fab-sm" data-act="open-import" title="Import PDF / PPTX / DOCX"><span class="i" data-icon="upload"></span></button>
+      <button class="fab fab-lg" data-act="new-paste" title="New note (⌘N)"><span class="i" data-icon="plus"></span></button>
+    </div>
+  </section>
+
+  <!-- ============ READER ============ -->
+  <section class="view view-reader" data-view="reader" hidden>
+    <div class="read-progress"><i id="read-progress-bar"></i></div>
+    <header class="doc-bar">
+      <div class="doc-bar-l">
+        <button class="btn btn-icon" data-act="back" title="Library (Esc)"><span class="i" data-icon="back"></span></button>
+        <button class="btn btn-icon only-outline" data-act="toggle-outline" title="Outline (⌘\)"><span class="i" data-icon="outline"></span></button>
+        <div class="doc-bar-title">
+          <span class="doc-emoji" id="doc-emoji"></span>
+          <span class="doc-name" id="doc-name">Untitled</span>
+          <span class="doc-subject tag" id="doc-subject" hidden></span>
+        </div>
+      </div>
+      <div class="doc-bar-r">
+        <button class="btn btn-icon" data-act="find" title="Find in note (⌘F)"><span class="i" data-icon="search"></span></button>
+        <button class="btn btn-icon" data-act="toggle-notes" title="Highlights &amp; notes (⌘J)"><span class="i" data-icon="marker"></span><i class="dot" id="hl-count-dot" hidden></i></button>
+        <button class="btn btn-icon" data-act="study-doc" title="Study this note (⌘D)"><span class="i" data-icon="cards"></span></button>
+        <button class="btn btn-icon" data-act="focus" title="Focus mode (F)"><span class="i" data-icon="focus"></span></button>
+        <button class="btn btn-icon" data-act="appearance" title="Appearance (⌘,)"><span class="i" data-icon="sliders"></span></button>
+        <button class="btn btn-primary btn-sm" data-act="edit"><span class="i" data-icon="pencil"></span><span class="lbl">Edit</span></button>
+        <button class="btn btn-icon" data-act="doc-menu" title="More"><span class="i" data-icon="more"></span></button>
+      </div>
+    </header>
+
+    <div class="find-bar" id="find-bar" hidden>
+      <span class="i" data-icon="search"></span>
+      <input id="find-input" type="text" placeholder="Find in note…" autocomplete="off" />
+      <span class="find-count" id="find-count">0/0</span>
+      <button class="btn btn-icon btn-xs" data-act="find-prev" title="Previous (⇧⏎)"><span class="i" data-icon="up"></span></button>
+      <button class="btn btn-icon btn-xs" data-act="find-next" title="Next (⏎)"><span class="i" data-icon="down"></span></button>
+      <button class="btn btn-icon btn-xs" data-act="find-close" title="Close (Esc)"><span class="i" data-icon="x"></span></button>
+    </div>
+
+    <div class="read-shell">
+      <aside class="outline" id="outline" aria-label="Outline">
+        <div class="side-head">
+          <span>Outline</span>
+          <button class="btn btn-icon btn-xs" data-act="toggle-outline" title="Hide"><span class="i" data-icon="x"></span></button>
+        </div>
+        <nav class="outline-list" id="outline-list"></nav>
+        <div class="outline-foot">
+          <div class="meta-row"><span>Words</span><b id="meta-words">0</b></div>
+          <div class="meta-row"><span>Read time</span><b id="meta-time">0 min</b></div>
+          <div class="meta-row"><span>Highlights</span><b id="meta-hl">0</b></div>
+        </div>
+      </aside>
+
+      <main class="read-main" id="read-main">
+        <article class="paper" id="paper">
+          <header class="paper-head" id="paper-head"></header>
+          <div class="prose" id="prose"></div>
+          <footer class="paper-foot" id="paper-foot"></footer>
+        </article>
+      </main>
+
+      <aside class="notes-panel" id="notes-panel" aria-label="Highlights and notes">
+        <div class="side-head">
+          <span>Highlights &amp; notes</span>
+          <button class="btn btn-icon btn-xs" data-act="toggle-notes" title="Hide"><span class="i" data-icon="x"></span></button>
+        </div>
+        <div class="hl-filter" id="hl-filter"></div>
+        <div class="hl-list" id="hl-list"></div>
+      </aside>
+
+      <div class="panel-scrim" id="panel-scrim" aria-hidden="true"></div>
+    </div>
+
+    <div class="sel-pop" id="sel-pop" hidden>
+      <div class="sel-colors" id="sel-colors"></div>
+      <span class="sel-div"></span>
+      <button class="sel-btn" data-sel="note" title="Add note (N)"><span class="i" data-icon="note"></span></button>
+      <button class="sel-btn" data-sel="card" title="Make flashcard (C)"><span class="i" data-icon="cards"></span></button>
+      <button class="sel-btn" data-sel="copy" title="Copy"><span class="i" data-icon="copy"></span></button>
+      <button class="sel-btn" data-sel="clear" title="Remove highlight (⌫)"><span class="i" data-icon="erase"></span></button>
+    </div>
+  </section>
+
+  <!-- ============ EDITOR ============ -->
+  <section class="view view-editor" data-view="editor" hidden>
+    <header class="doc-bar">
+      <div class="doc-bar-l">
+        <button class="btn btn-icon" data-act="editor-back" title="Done (Esc)"><span class="i" data-icon="back"></span></button>
+        <input class="title-input" id="ed-title" placeholder="Untitled note" />
+      </div>
+      <div class="doc-bar-r">
+        <span class="save-state" id="save-state">Saved</span>
+        <div class="seg" role="group" aria-label="Editor layout">
+          <button class="seg-btn" data-edlayout="write" title="Write only">Write</button>
+          <button class="seg-btn is-on" data-edlayout="split" title="Split">Split</button>
+          <button class="seg-btn" data-edlayout="preview" title="Preview only">Preview</button>
+        </div>
+        <button class="btn btn-icon" data-act="ed-guide" title="Formatting guide"><span class="i" data-icon="help"></span></button>
+        <button class="btn btn-primary btn-sm" data-act="editor-done"><span class="i" data-icon="check"></span><span class="lbl">Done</span></button>
+      </div>
+    </header>
+
+    <div class="ed-meta">
+      <label class="ed-field"><span>Subject</span><input id="ed-subject" list="subject-list" placeholder="e.g. Physiology" /></label>
+      <datalist id="subject-list"></datalist>
+      <label class="ed-field"><span>Tags</span><input id="ed-tags" placeholder="comma, separated" /></label>
+      <label class="ed-field ed-field-sm"><span>Icon</span><input id="ed-emoji" maxlength="4" placeholder="📘" /></label>
+      <div class="ed-field ed-field-accent"><span>Accent</span><div class="accent-dots" id="ed-accents"></div></div>
+    </div>
+
+    <div class="ed-toolbar" id="ed-toolbar"></div>
+
+    <div class="ed-shell" id="ed-shell" data-layout="split">
+      <div class="ed-write">
+        <textarea id="ed-source" spellcheck="true" placeholder="Paste your summary here…
+
+Tip: press the ✨ button in the toolbar to copy a prompt that makes Claude write in exactly the right format."></textarea>
+        <div class="ed-status">
+          <span id="ed-count">0 words</span>
+          <span class="ed-status-hint">Drop or paste images anywhere · ⌘B bold · ⌘I italic · ⌘H highlight</span>
+        </div>
+      </div>
+      <div class="ed-resizer" id="ed-resizer" role="separator" aria-orientation="vertical"></div>
+      <div class="ed-preview">
+        <article class="paper paper-preview">
+          <div class="prose" id="ed-prose"></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STUDY ============ -->
+  <section class="view view-study" data-view="study" hidden>
+    <header class="doc-bar">
+      <div class="doc-bar-l">
+        <button class="btn btn-icon" data-act="study-back" title="Back (Esc)"><span class="i" data-icon="back"></span></button>
+        <div class="doc-bar-title"><span class="doc-name" id="study-title">Study</span></div>
+      </div>
+      <div class="doc-bar-r">
+        <span class="study-counter" id="study-counter"></span>
+        <button class="btn btn-icon" data-act="study-shuffle" title="Shuffle"><span class="i" data-icon="shuffle"></span></button>
+      </div>
+    </header>
+    <div class="study-shell">
+      <div class="study-progress"><i id="study-bar"></i></div>
+      <div class="flash" id="flash">
+        <div class="flash-card" id="flash-card">
+          <div class="flash-face flash-q"><div class="flash-label">Question</div><div class="flash-body" id="flash-q"></div></div>
+          <div class="flash-face flash-a" id="flash-a-wrap"><div class="flash-label">Answer</div><div class="flash-body" id="flash-a"></div></div>
+        </div>
+        <div class="flash-actions" id="flash-actions">
+          <button class="btn btn-lg btn-primary" data-grade="show">Show answer <kbd>Space</kbd></button>
+        </div>
+        <div class="flash-grades" id="flash-grades" hidden>
+          <button class="btn grade grade-1" data-grade="1">Again <kbd>1</kbd></button>
+          <button class="btn grade grade-2" data-grade="2">Hard <kbd>2</kbd></button>
+          <button class="btn grade grade-3" data-grade="3">Good <kbd>3</kbd></button>
+          <button class="btn grade grade-4" data-grade="4">Easy <kbd>4</kbd></button>
+        </div>
+      </div>
+      <div class="study-done" id="study-done" hidden>
+        <div class="done-mark" aria-hidden="true">✓</div>
+        <h2>All caught up</h2>
+        <p id="study-done-sub"></p>
+        <div class="empty-actions">
+          <button class="btn btn-primary" data-act="study-again">Study again</button>
+          <button class="btn" data-act="study-back">Back</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ IMPORT ============ -->
+  <section class="view view-import" data-view="import" hidden>
+    <header class="doc-bar">
+      <div class="doc-bar-l">
+        <button class="btn btn-icon" data-act="back" title="Library (Esc)"><span class="i" data-icon="back"></span></button>
+        <div class="doc-bar-title"><span class="doc-name">Import &amp; clean up</span></div>
+      </div>
+      <div class="doc-bar-r">
+        <button class="btn btn-primary btn-sm" data-act="import-create" id="import-create" disabled><span class="i" data-icon="check"></span> Create note</button>
+      </div>
+    </header>
+    <div class="import-shell">
+      <div class="import-left">
+        <div class="dropzone" id="dropzone" tabindex="0">
+          <span class="i i-xl" data-icon="upload" aria-hidden="true"></span>
+          <h3>Drop a PDF, PowerPoint, Word or text file</h3>
+          <p>…or click to choose. Everything is processed on your device — nothing is uploaded.</p>
+          <input type="file" id="file-input" accept=".pdf,.pptx,.docx,.md,.txt,.markdown,.html,.htm" multiple hidden />
+        </div>
+        <div class="import-opts" id="import-opts" hidden>
+          <h4>Clean-up</h4>
+          <label class="check"><input type="checkbox" id="opt-unwrap" checked /><span>Rejoin broken lines into proper paragraphs</span></label>
+          <label class="check"><input type="checkbox" id="opt-hyphen" checked /><span>Repair words split across lines</span></label>
+          <label class="check"><input type="checkbox" id="opt-headings" checked /><span>Detect headings from size &amp; style</span></label>
+          <label class="check"><input type="checkbox" id="opt-bullets" checked /><span>Normalise bullets and numbering</span></label>
+          <label class="check"><input type="checkbox" id="opt-furniture" checked /><span>Strip page numbers, headers &amp; footers</span></label>
+          <label class="check"><input type="checkbox" id="opt-quotes" checked /><span>Typographic quotes, dashes &amp; ellipses</span></label>
+          <label class="check"><input type="checkbox" id="opt-images" checked /><span>Keep images / slide pictures</span></label>
+          <label class="check"><input type="checkbox" id="opt-snap" /><span>Add a picture of every page (for diagram-heavy PDFs)</span></label>
+          <label class="check"><input type="checkbox" id="opt-notes" checked /><span>Keep PowerPoint speaker notes</span></label>
+          <h4>Structure</h4>
+          <label class="check"><input type="checkbox" id="opt-callouts" checked /><span>Turn “Note:”, “Important:”, “Example:” lines into callouts</span></label>
+          <label class="check"><input type="checkbox" id="opt-quiz" checked /><span>Turn Q&amp;A pairs into flashcards</span></label>
+          <button class="btn btn-block" data-act="import-reparse"><span class="i" data-icon="refresh"></span> Re-run clean-up</button>
+        </div>
+      </div>
+      <div class="import-right">
+        <div class="import-status" id="import-status" hidden>
+          <div class="bar"><i id="import-bar"></i></div>
+          <span id="import-status-text">Reading…</span>
+        </div>
+        <div class="import-preview-head" id="import-preview-head" hidden>
+          <div class="seg">
+            <button class="seg-btn is-on" data-imptab="preview">Preview</button>
+            <button class="seg-btn" data-imptab="source">Source</button>
+          </div>
+          <span class="muted" id="import-meta"></span>
+        </div>
+        <div class="import-preview" id="import-preview">
+          <div class="import-placeholder">
+            <p>Your cleaned-up note will appear here.</p>
+          </div>
+        </div>
+        <textarea class="import-source" id="import-source" hidden spellcheck="false"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GUIDE ============ -->
+  <section class="view view-guide" data-view="guide" hidden>
+    <header class="doc-bar">
+      <div class="doc-bar-l">
+        <button class="btn btn-icon" data-act="back" title="Library (Esc)"><span class="i" data-icon="back"></span></button>
+        <div class="doc-bar-title"><span class="doc-name">Writing &amp; AI format guide</span></div>
+      </div>
+      <div class="doc-bar-r">
+        <button class="btn btn-primary btn-sm" data-act="copy-prompt"><span class="i" data-icon="copy"></span> Copy prompt for Claude</button>
+      </div>
+    </header>
+    <div class="guide-shell" id="guide-shell"></div>
+  </section>
+</div>
+
+<!-- ============ OVERLAYS ============ -->
+<div class="scrim" id="scrim" hidden></div>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true">
+  <div class="sheet-head"><h3 id="sheet-title">Title</h3><button class="btn btn-icon btn-xs" data-act="sheet-close"><span class="i" data-icon="x"></span></button></div>
+  <div class="sheet-body" id="sheet-body"></div>
+  <div class="sheet-foot" id="sheet-foot"></div>
+</div>
+
+<div class="palette" id="palette" hidden role="dialog" aria-modal="true" aria-label="Command palette">
+  <div class="palette-field">
+    <span class="i" data-icon="search"></span>
+    <input id="palette-input" placeholder="Search notes or type a command…" autocomplete="off" spellcheck="false" />
+    <kbd>Esc</kbd>
+  </div>
+  <div class="palette-list" id="palette-list"></div>
+  <div class="palette-foot"><kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>⏎</kbd> open · <kbd>⌘K</kbd> toggle</div>
+</div>
+
+<div class="menu" id="menu" hidden role="menu"></div>
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+<div class="lightbox" id="lightbox" hidden><img id="lightbox-img" alt="" /><button class="lightbox-close" data-act="lightbox-close"><span class="i" data-icon="x"></span></button><div class="lightbox-cap" id="lightbox-cap"></div></div>
+
+<script type="module" src="./src/main.js"></script>
+<noscript><p style="padding:2rem;font-family:system-ui">Lucid needs JavaScript to run.</p></noscript>
+</body>
+</html>

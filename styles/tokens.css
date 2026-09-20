@@ -1,0 +1,255 @@
+/* ==========================================================================
+   Lucid — design tokens
+   Everything visual is a variable so the Appearance panel can retune the
+   entire app live, without a reload.
+   ========================================================================== */
+
+:root {
+  /* ---- typography scale (user tunable) ---- */
+  --font-scale: 1;              /* 0.85 – 1.35 */
+  --line-height: 1.7;           /* 1.4 – 2.1  */
+  --measure: 68ch;              /* content width */
+  --para-space: 1.15em;         /* gap between paragraphs */
+  --para-indent: 0em;           /* first-line indent */
+  --letter-space: 0em;
+  --word-space: 0em;
+  --heading-weight: 680;
+  --heading-tracking: -0.02em;
+  --text-align: left;
+  --hyphens: manual;
+
+  --fs-xs: calc(0.72rem * var(--font-scale));
+  --fs-sm: calc(0.82rem * var(--font-scale));
+  --fs-ui: calc(0.9rem  * var(--font-scale));
+  --fs-base: calc(1.06rem * var(--font-scale));
+  --fs-lg: calc(1.2rem  * var(--font-scale));
+  --fs-h4: calc(1.1rem  * var(--font-scale));
+  --fs-h3: calc(1.32rem * var(--font-scale));
+  --fs-h2: calc(1.62rem * var(--font-scale));
+  --fs-h1: calc(2.15rem * var(--font-scale));
+  --fs-title: calc(2.6rem * var(--font-scale));
+
+  /* ---- shape & density ---- */
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --density: 1;                 /* 0.85 compact – 1.2 roomy */
+  --gap-1: calc(4px * var(--density));
+  --gap-2: calc(8px * var(--density));
+  --gap-3: calc(12px * var(--density));
+  --gap-4: calc(16px * var(--density));
+  --gap-5: calc(24px * var(--density));
+  --gap-6: calc(32px * var(--density));
+  --gap-7: calc(48px * var(--density));
+  --tap: 38px;
+
+  --border-w: 1px;
+  --shadow-strength: 1;
+  --speed: 1;                    /* animation multiplier; 0 = off */
+  --t-fast: calc(120ms * var(--speed));
+  --t-mid: calc(220ms * var(--speed));
+  --t-slow: calc(420ms * var(--speed));
+  --ease: cubic-bezier(.22,.7,.3,1);
+
+  /* ---- fonts ---- */
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-ui);
+  --font-head: var(--font-ui);
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Roboto Mono", monospace;
+
+  /* ---- accent (overridden by [data-accent]) ---- */
+  --accent-h: 210; --accent-s: 92%; --accent-l: 60%;
+  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --accent-soft: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / .16);
+  --accent-line: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / .38);
+  --accent-ink: hsl(var(--accent-h) calc(var(--accent-s) * .9) 97%);
+  --on-accent: #fff;
+
+  /* ---- highlight palette (shared across themes) ---- */
+  --hl-1: 48;   /* butter  */
+  --hl-2: 145;  /* mint    */
+  --hl-3: 200;  /* sky     */
+  --hl-4: 330;  /* rose    */
+  --hl-5: 268;  /* lilac   */
+  --hl-sat: 90%;
+  --hl-alpha: .30;
+  --hl-style: solid;            /* solid | underline | marker */
+}
+
+/* ===================== THEMES ===================== */
+
+/* Midnight — the default: deep blue-grey, low glare, high comfort */
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --bg: #0e1117;
+  --bg-2: #141922;
+  --bg-3: #1b212c;
+  --surface: #161c26;
+  --surface-2: #1d2430;
+  --surface-hi: #232b39;
+  --paper: #141a23;
+  --line: #262e3b;
+  --line-soft: #1f2632;
+  --ink: #e8edf5;
+  --ink-2: #b3bdcc;
+  --ink-3: #7f8b9d;
+  --ink-4: #5c6779;
+  --shadow: 0 1px 2px rgb(0 0 0 / calc(.35 * var(--shadow-strength))), 0 12px 32px -12px rgb(0 0 0 / calc(.65 * var(--shadow-strength)));
+  --glow: 0 0 0 1px var(--accent-line), 0 8px 30px -8px hsl(var(--accent-h) 90% 50% / .35);
+}
+
+/* Ink — true black, gorgeous on OLED iPhone */
+[data-theme="ink"] {
+  color-scheme: dark;
+  --bg: #000; --bg-2: #08090c; --bg-3: #101217;
+  --surface: #0b0d11; --surface-2: #14171d; --surface-hi: #1c2027;
+  --paper: #06070a;
+  --line: #1e222a; --line-soft: #14171d;
+  --ink: #edf1f7; --ink-2: #aeb7c4; --ink-3: #7a8494; --ink-4: #545d6b;
+  --shadow: 0 1px 2px rgb(0 0 0 / .8), 0 14px 40px -14px rgb(0 0 0 / .9);
+  --glow: 0 0 0 1px var(--accent-line), 0 10px 40px -10px hsl(var(--accent-h) 90% 50% / .45);
+}
+
+/* Slate — softer neutral dark */
+[data-theme="slate"] {
+  color-scheme: dark;
+  --bg: #16181d; --bg-2: #1c1f26; --bg-3: #23272f;
+  --surface: #1e2128; --surface-2: #262a33; --surface-hi: #2e333d;
+  --paper: #1b1e24;
+  --line: #31363f; --line-soft: #272b33;
+  --ink: #eceef2; --ink-2: #b8bdc7; --ink-3: #868d99; --ink-4: #636a76;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 12px 30px -12px rgb(0 0 0 / .55);
+  --glow: 0 0 0 1px var(--accent-line), 0 8px 30px -8px hsl(var(--accent-h) 90% 50% / .3);
+}
+
+/* Paper — clean daylight */
+[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #f4f5f7; --bg-2: #eceef1; --bg-3: #e4e7eb;
+  --surface: #ffffff; --surface-2: #f7f8fa; --surface-hi: #eef0f4;
+  --paper: #ffffff;
+  --line: #e0e4ea; --line-soft: #ebeef2;
+  --ink: #171a20; --ink-2: #454b57; --ink-3: #6e7683; --ink-4: #949ba7;
+  --shadow: 0 1px 2px rgb(16 24 40 / calc(.06 * var(--shadow-strength))), 0 12px 28px -14px rgb(16 24 40 / calc(.18 * var(--shadow-strength)));
+  --glow: 0 0 0 1px var(--accent-line), 0 8px 24px -10px hsl(var(--accent-h) 80% 45% / .28);
+  --hl-alpha: .34;
+}
+
+/* Sepia — warm, easy for long reading */
+[data-theme="sepia"] {
+  color-scheme: light;
+  --bg: #efe7d8; --bg-2: #e9e0cf; --bg-3: #e2d8c4;
+  --surface: #fbf5e9; --surface-2: #f4ecdc; --surface-hi: #ece2ce;
+  --paper: #fdf8ee;
+  --line: #ddd2bb; --line-soft: #e7dcc8;
+  --ink: #2f2a22; --ink-2: #574f42; --ink-3: #82786a; --ink-4: #a2998a;
+  --shadow: 0 1px 2px rgb(80 60 30 / .08), 0 12px 28px -14px rgb(80 60 30 / .22);
+  --glow: 0 0 0 1px var(--accent-line), 0 8px 24px -10px hsl(var(--accent-h) 70% 45% / .3);
+  --hl-alpha: .32;
+}
+
+/* Nord — cool arctic */
+[data-theme="nord"] {
+  color-scheme: dark;
+  --bg: #2e3440; --bg-2: #333b48; --bg-3: #3b4252;
+  --surface: #353d4b; --surface-2: #3e4759; --surface-hi: #475065;
+  --paper: #323a47;
+  --line: #4a5467; --line-soft: #3e4757;
+  --ink: #eceff4; --ink-2: #d2d8e3; --ink-3: #9aa5b8; --ink-4: #78839a;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 12px 30px -12px rgb(0 0 0 / .5);
+  --glow: 0 0 0 1px var(--accent-line), 0 8px 30px -8px hsl(var(--accent-h) 70% 55% / .35);
+}
+
+/* Forest — deep green, calm */
+[data-theme="forest"] {
+  color-scheme: dark;
+  --bg: #0f1613; --bg-2: #141d19; --bg-3: #1b2621;
+  --surface: #16201b; --surface-2: #1d2823; --surface-hi: #25322b;
+  --paper: #131c17;
+  --line: #27352d; --line-soft: #1e2a24;
+  --ink: #e7f0ea; --ink-2: #b2c2b8; --ink-3: #7e9188; --ink-4: #5d6e66;
+  --shadow: 0 1px 2px rgb(0 0 0 / .35), 0 12px 32px -12px rgb(0 0 0 / .6);
+  --glow: 0 0 0 1px var(--accent-line), 0 8px 30px -8px hsl(var(--accent-h) 70% 45% / .35);
+}
+
+/* Contrast — maximum legibility */
+[data-theme="contrast"] {
+  color-scheme: dark;
+  --bg: #000; --bg-2: #0a0a0a; --bg-3: #141414;
+  --surface: #0d0d0d; --surface-2: #171717; --surface-hi: #222;
+  --paper: #000;
+  --line: #4a4a4a; --line-soft: #333;
+  --ink: #fff; --ink-2: #e6e6e6; --ink-3: #bdbdbd; --ink-4: #949494;
+  --border-w: 1.5px;
+  --shadow: none;
+  --glow: 0 0 0 2px var(--accent);
+  --hl-alpha: .45;
+}
+
+/* ===================== ACCENTS ===================== */
+[data-accent="blue"]    { --accent-h: 214; --accent-s: 92%; --accent-l: 60%; }
+[data-accent="indigo"]  { --accent-h: 248; --accent-s: 84%; --accent-l: 66%; }
+[data-accent="violet"]  { --accent-h: 272; --accent-s: 80%; --accent-l: 68%; }
+[data-accent="magenta"] { --accent-h: 318; --accent-s: 76%; --accent-l: 64%; }
+[data-accent="crimson"] { --accent-h: 349; --accent-s: 80%; --accent-l: 62%; }
+[data-accent="amber"]   { --accent-h: 38;  --accent-s: 92%; --accent-l: 56%; }
+[data-accent="gold"]    { --accent-h: 45;  --accent-s: 84%; --accent-l: 55%; }
+[data-accent="emerald"] { --accent-h: 158; --accent-s: 72%; --accent-l: 46%; }
+[data-accent="teal"]    { --accent-h: 180; --accent-s: 68%; --accent-l: 45%; }
+[data-accent="cyan"]    { --accent-h: 195; --accent-s: 86%; --accent-l: 52%; }
+[data-accent="slate"]   { --accent-h: 215; --accent-s: 18%; --accent-l: 62%; }
+
+[data-theme="paper"], [data-theme="sepia"] { --accent-l: 48%; --accent-ink: hsl(var(--accent-h) 60% 26%); }
+[data-theme="contrast"] { --accent-l: 66%; --accent-s: 100%; }
+
+/* ===================== FONT PRESETS ===================== */
+[data-font="modern"] {
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-head: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+[data-font="editorial"] {
+  --font-body: ui-serif, "New York", "Iowan Old Style", Charter, Georgia, "Times New Roman", serif;
+  --font-head: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, sans-serif;
+  --heading-tracking: -0.025em;
+}
+[data-font="classic"] {
+  --font-body: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, ui-serif, serif;
+  --font-head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+  --heading-weight: 640;
+}
+[data-font="humanist"] {
+  --font-body: "Avenir Next", Avenir, "Segoe UI", Optima, "Gill Sans", system-ui, sans-serif;
+  --font-head: "Avenir Next", Avenir, Optima, "Gill Sans", system-ui, sans-serif;
+  --heading-weight: 620;
+}
+[data-font="book"] {
+  --font-body: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, ui-serif, serif;
+  --font-head: Charter, "Sitka Heading", Cambria, Georgia, ui-serif, serif;
+}
+[data-font="grotesk"] {
+  --font-body: "Helvetica Neue", Helvetica, "Segoe UI", Arial, system-ui, sans-serif;
+  --font-head: "Helvetica Neue", Helvetica, "Segoe UI Semibold", Arial, system-ui, sans-serif;
+  --heading-tracking: -0.03em;
+}
+[data-font="readable"] {
+  --font-body: Verdana, Tahoma, "Segoe UI", system-ui, sans-serif;
+  --font-head: "Trebuchet MS", Verdana, "Segoe UI", system-ui, sans-serif;
+  --letter-space: 0.01em;
+  --word-space: 0.04em;
+}
+[data-font="mono"] {
+  --font-body: var(--font-mono);
+  --font-head: var(--font-mono);
+  --heading-tracking: -0.01em;
+}
+
+/* ===================== PAGE TEXTURE ===================== */
+[data-texture="plain"]  { --texture: none; }
+[data-texture="grid"]   { --texture: linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px); --texture-size: 28px 28px; }
+[data-texture="dots"]   { --texture: radial-gradient(var(--line) .9px, transparent .9px); --texture-size: 22px 22px; }
+[data-texture="lines"]  { --texture: repeating-linear-gradient(0deg, transparent, transparent 31px, var(--line-soft) 31px, var(--line-soft) 32px); --texture-size: auto; }
+
+/* ===================== MOTION ===================== */
+@media (prefers-reduced-motion: reduce) { :root { --speed: 0.001; } }
+[data-motion="off"] { --speed: 0.001; }

@@ -1,0 +1,23 @@
+{
+  "name": "Lucid — Study Notes",
+  "short_name": "Lucid",
+  "description": "A calm, beautiful home for your study notes. Paste, import, highlight and revise — entirely on your own device.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0e1117",
+  "theme_color": "#0e1117",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "./assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "New note", "url": "./#/editor", "icons": [{ "src": "./assets/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Import a file", "url": "./#/import" },
+    { "name": "Study", "url": "./#/study" }
+  ]
+}

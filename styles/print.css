@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Lucid — print. On an iPad, "Print → Save to Files" is how you get a PDF,
+   so this has to be genuinely good, not an afterthought.
+   Redefining the tokens means every component recolours itself correctly.
+   ========================================================================== */
+
+@page { margin: 17mm 16mm; }
+
+:root {
+  --bg: #fff; --bg-2: #fff; --bg-3: #fff;
+  --surface: #fff; --surface-2: #f6f7f8; --surface-hi: #eef0f2;
+  --paper: #fff;
+  --line: #d4d8dd; --line-soft: #e6e9ec;
+  --ink: #101215; --ink-2: #24282e; --ink-3: #4e545d; --ink-4: #6d747e;
+  --accent-l: 38%;
+  --accent-ink: hsl(var(--accent-h) 55% 30%);
+  --shadow: none;
+  --glow: none;
+  --hl-alpha: .40;
+  --hl-sat: 80%;
+  --speed: 0.001;
+  --font-scale: 0.94;
+  --line-height: 1.5;
+  --measure: 100%;
+}
+
+html, body { background: #fff !important; color: var(--ink) !important; }
+
+/* chrome goes away */
+.boot, .lib-head, .doc-bar, .outline, .notes-panel, .panel-scrim, .fab-stack,
+.sel-pop, .palette, .menu, .toast-stack, .scrim, .sheet, .lightbox,
+.read-progress, .find-bar, .ed-toolbar, .ed-meta, .ed-write, .ed-resizer,
+.focus-exit, .paper-foot, .h-anchor, .import-left, .guide-shell .empty-actions {
+  display: none !important;
+}
+.view[hidden] { display: none !important; }
+
+/* let the page flow */
+.view, .read-shell, .ed-shell, .import-shell { display: block !important; height: auto !important; overflow: visible !important; }
+.read-main, .ed-preview, .import-preview, .guide-shell { overflow: visible !important; height: auto !important; background: none !important; }
+.paper, .paper-preview {
+  max-width: 100% !important; margin: 0 !important; padding: 0 !important;
+  border: 0 !important; box-shadow: none !important; background: #fff !important;
+}
+
+/* the page itself */
+.paper-title { color: #000 !important; font-size: 24pt; margin-bottom: .3em; }
+.paper-kicker { color: var(--accent-ink) !important; font-size: 9pt; }
+.paper-meta { color: #666 !important; font-size: 8.5pt; border-top: 1px solid #ddd !important; margin-bottom: 20pt; }
+.paper-meta .tag { background: #f0f0f0 !important; color: #555 !important; }
+
+.prose { color: #1b1e22 !important; font-size: 10.5pt; line-height: 1.5; }
+.prose h1, .prose h2, .prose h3, .prose h4 { color: #000 !important; break-after: avoid; page-break-after: avoid; }
+.prose h2 { border-bottom: 1px solid #d8d8d8 !important; font-size: 15pt; }
+.prose h3 { font-size: 12.5pt; }
+.prose strong { color: #000 !important; }
+.prose a { color: #123f8f !important; text-decoration: underline; }
+.prose a[href^="http"]::after { content: " (" attr(href) ")"; font-size: .76em; color: #777; word-break: break-all; }
+.prose code { background: #f2f3f5 !important; border-color: #e0e2e6 !important; color: #29405f !important; }
+.prose pre { background: #f7f8f9 !important; border-color: #e0e2e6 !important; }
+.prose pre code { color: #24282e !important; }
+.prose blockquote { border-left-color: #c9ced4 !important; color: #40464e !important; }
+.prose table th { background: #f2f3f5 !important; color: #000 !important; }
+.prose figure img { box-shadow: none !important; border-color: #ddd !important; max-height: 16cm; }
+.prose figcaption { color: #666 !important; }
+
+/* components keep their identity but print legibly */
+.callout {
+  background: hsl(var(--c-h) 70% 96%) !important;
+  border: 1px solid hsl(var(--c-h) 45% 82%) !important;
+  border-left: 3px solid hsl(var(--c-h) 55% 52%) !important;
+  color: #1b1e22 !important;
+}
+.callout-head { color: hsl(var(--c-h) 60% 30%) !important; }
+.steps .step::before {
+  background: hsl(var(--c-h) 60% 92%) !important;
+  border-color: hsl(var(--c-h) 45% 72%) !important;
+  color: hsl(var(--c-h) 60% 30%) !important;
+}
+.compare-col { background: #f7f8f9 !important; border-color: #e0e2e6 !important; }
+.deflist dt { color: #000 !important; }
+.quiz { background: #fafbfc !important; border: 1px solid #dfe2e6 !important; }
+.quiz-a { display: block !important; color: #363b42 !important; }
+.quiz .arrow { display: none !important; }
+.hl { background: hsl(var(--h) 85% 76%) !important; border-radius: 2px; }
+[data-hlstyle="underline"] .hl { border-bottom: 2px solid hsl(var(--h) 70% 45%) !important; }
+
+/* never split these across pages */
+.callout, .quiz, .compare, figure, .prose pre, .prose table, .deflist { break-inside: avoid; page-break-inside: avoid; }
+.prose li { break-inside: avoid; }
+
+/* make sure the colours actually come out */
+* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
