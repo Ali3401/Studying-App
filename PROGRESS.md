@@ -37,7 +37,28 @@ python3 -m http.server 8000     # then open http://localhost:8000
 node tools/selftest.mjs         # 75 assertions, no browser needed
 ```
 
-### Deploying — one manual step is outstanding
+### Live now as a Claude Artifact
+
+https://claude.ai/artifact/AWd8E2YFkWvhPi8rcEaFRy — private to the owner,
+usable immediately. Note that an artifact has its own browser origin, so its
+notes are a **separate store** from a GitHub Pages copy; move between them
+with Appearance → Data → Export / Restore.
+
+Publishing there needs `node tools/escape-vendor.mjs <dir>` first: the host
+rejects text files containing raw control bytes, and pdf.js's minified worker
+embeds 30 of them (plus 11 in JSZip) inside string literals that build binary
+font tables. The script rewrites each as `\xNN`, which the JS parser treats
+identically — verified by running the PDF and PowerPoint import tests against
+the escaped copies. The vendored originals stay byte-identical to npm.
+
+### Deploying to GitHub Pages — blocked on two settings
+
+**The repository is private, and GitHub Pages on a private repo needs a paid
+plan.** Making the repo public is the free route and costs nothing in privacy:
+notes live in the browser and are never in the repo.
+
+The default branch is `claude/study-notes-display-app-2x6rkg`, so no merge is
+needed — Pages will build straight from it.
 
 `.github/workflows/pages.yml` runs the self test (passing) then publishes to
 GitHub Pages. **The deploy job fails until Pages is switched on**, and a
@@ -45,10 +66,10 @@ workflow cannot switch it on itself: the token comes back
 `Resource not accessible by integration` from the create-Pages-site API. This
 was tried with `configure-pages`' `enablement: true` and refused.
 
-So: repo → Settings → Pages → Build and deployment → Source: **GitHub
-Actions**, then re-run the workflow. The workflow now checks for this first
-and fails with a titled error saying exactly that, instead of the opaque
-"Get Pages site failed".
+So, in order: Settings → General → Change visibility → **Public**; then
+Settings → Pages → Source: **GitHub Actions**; then re-run the workflow. It
+now checks for this first and fails with a titled error saying exactly that,
+instead of the opaque "Get Pages site failed".
 
 Once it is on, the site lands at https://ali3401.github.io/Studying-App/ and
 every push redeploys it.
