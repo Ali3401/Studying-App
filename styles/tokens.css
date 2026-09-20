@@ -42,7 +42,7 @@
   --gap-5: calc(24px * var(--density));
   --gap-6: calc(32px * var(--density));
   --gap-7: calc(48px * var(--density));
-  --tap: 38px;
+  --tap: 38px;                   /* raised on touch, see below */
 
   --border-w: 1px;
   --shadow-strength: 1;
@@ -273,3 +273,11 @@
 /* ===================== MOTION ===================== */
 @media (prefers-reduced-motion: reduce) { :root { --speed: 0.001; } }
 [data-motion="off"] { --speed: 0.001; }
+
+/* A finger is not a cursor. Apple's guidance is 44pt, and the difference
+   between 38 and 44 is the difference between hitting the back button and
+   hitting the outline button next to it. Keyed on the pointer rather than
+   the width, so an iPad gets it too. */
+@media (pointer: coarse) {
+  :root { --tap: 44px; }
+}

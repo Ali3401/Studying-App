@@ -76,7 +76,7 @@
 .fab:hover { transform: translateY(-2px) scale(1.04); }
 .fab:active { transform: scale(.95); }
 .fab-lg { width: 54px; height: 54px; font-size: 1.35rem; }
-.fab-sm { width: 42px; height: 42px; background: var(--surface-hi); color: var(--ink-2); border: var(--border-w) solid var(--line); box-shadow: var(--shadow); }
+.fab-sm { width: var(--tap); height: var(--tap); background: var(--surface-hi); color: var(--ink-2); border: var(--border-w) solid var(--line); box-shadow: var(--shadow); }
 .fab-sm:hover { color: var(--ink); }
 
 @media (max-width: 720px) {

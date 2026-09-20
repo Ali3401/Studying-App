@@ -18,8 +18,29 @@
 
 .ed-toolbar { display: flex; gap: 3px; padding: var(--gap-2) var(--gap-4); border-bottom: var(--border-w) solid var(--line-soft); overflow-x: auto; flex: none; scrollbar-width: none; background: var(--bg-2); }
 .ed-toolbar::-webkit-scrollbar { display: none; }
+/* The bar scrolls but hides its scrollbar, so on a narrow screen the last
+   button just looked cut off. A fade at the edge says there is more. */
+.ed-toolbar-wrap { position: relative; flex: none; }
+.ed-toolbar-wrap::after {
+  content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 34px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--bg-2));
+}
 .tb-btn { display: inline-flex; align-items: center; gap: .4em; height: 30px; padding: 0 10px; border-radius: var(--radius-sm); color: var(--ink-3); font-size: var(--fs-sm); font-weight: 560; white-space: nowrap; transition: all var(--t-fast) var(--ease); }
 .tb-btn:hover { background: var(--surface-hi); color: var(--ink); }
+
+@media (pointer: coarse) {
+  .tb-btn { height: var(--tap); }
+  .ed-field input { min-height: var(--tap); }
+  /* ::after already draws the swatch, so the hit area goes on ::before —
+     invisible, and big enough for a fingertip. */
+  .ed-field-accent .accent-dot::before {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: var(--tap); height: var(--tap); transform: translate(-50%, -50%);
+    border-radius: 50%;
+  }
+  .ed-field-accent .accent-dots { gap: var(--gap-3); }
+}
 .tb-btn .i { font-size: 1em; }
 .tb-btn.accent { color: var(--accent); }
 .tb-sep { width: 1px; background: var(--line); margin: 5px 5px; flex: none; }
@@ -51,6 +72,26 @@
   .ed-shell[data-layout="preview"] { grid-template-columns: 0 0 1fr; }
   .ed-shell[data-layout="preview"] .ed-preview { display: block; }
   .ed-meta { gap: var(--gap-2); }
+
+  /* There is no room for two panes here, so Split does exactly what Write
+     does — offering it is a button that appears to do nothing. */
+  .view-editor .seg-btn[data-edlayout="split"] { display: none; }
+}
+
+/* The title is the point of this bar, and it was losing every pixel to the
+   controls beside it: `flex: 1` with `min-width: 0` shrinks to nothing long
+   before anything else gives way. On a narrow screen the bar keeps half its
+   width for the title and the controls do the yielding. */
+@media (max-width: 600px) {
+  /* A floor in pixels, not a percentage: a percentage large enough to be
+     useful pushed the Done button off the end of the bar. */
+  .view-editor .doc-bar-l { flex: 1 1 auto; min-width: 90px; }
+  .view-editor .save-state { display: none; }
+  /* the formatting bar directly below covers the same ground */
+  .view-editor [data-act="ed-guide"] { display: none; }
+  .title-input { font-size: var(--fs-base); }
+  .ed-status-hint { display: none; }
+  .ed-status { justify-content: flex-start; }
 }
 
 /* ---------- study ---------- */

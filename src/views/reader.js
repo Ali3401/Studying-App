@@ -786,6 +786,7 @@ function docMenu(anchor) {
     { label: doc.pinned ? 'Unpin' : 'Pin to top', icon: 'pin', fn: async () => { doc.pinned = !doc.pinned; await store.save(doc, { touch: false }); } },
     { label: 'Appearance', icon: 'sliders', sub: '⌘,', fn: () => actions.openAppearance?.() },
     '-',
+    { label: 'Find in note', icon: 'search', sub: '⌘F', fn: openFind },
     { label: 'Outline', icon: 'outline', sub: '⌘\\', fn: () => togglePanel('outline') },
     { label: 'Highlights & notes', icon: 'marker', sub: '⌘J', fn: () => { togglePanel('notes'); renderNotesPanel(); } },
     { label: 'Study this note', icon: 'cards', sub: '⌘D', fn: () => go('study', { id: doc.id }) },

@@ -14,6 +14,11 @@
 }
 .doc-bar-l, .doc-bar-r { display: flex; align-items: center; gap: var(--gap-1); min-width: 0; }
 .doc-bar-l { flex: 1; }
+/* The title is the only thing in this bar that may give up space. A button
+   that shrinks stops being a button — the editor's Done shrank to 18px and
+   then off the end of the bar entirely. */
+.doc-bar .btn { flex: none; }
+.doc-bar-r { flex: none; }
 .doc-bar-title { display: flex; align-items: center; gap: var(--gap-2); min-width: 0; margin-left: var(--gap-2); }
 .doc-emoji { flex: none; font-size: 1.05rem; }
 .doc-name { font-weight: 620; letter-spacing: -.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -39,6 +44,8 @@
 .o-item { display: block; width: 100%; text-align: left; padding: 6px var(--gap-3); border-radius: var(--radius-sm); color: var(--ink-3); font-size: var(--fs-sm); line-height: 1.45; border-left: 2px solid transparent; transition: all var(--t-fast) var(--ease); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .o-item:hover { background: var(--surface-2); color: var(--ink); }
 .o-item.is-on { color: var(--accent-ink); background: var(--accent-soft); border-left-color: var(--accent); font-weight: 600; }
+/* outline rows are how you navigate a long note on a phone */
+@media (pointer: coarse) { .o-item { padding-block: 10px; min-height: var(--tap); } }
 .o-1 { padding-left: var(--gap-3); font-weight: 600; color: var(--ink-2); }
 .o-2 { padding-left: calc(var(--gap-3) + 12px); }
 .o-3 { padding-left: calc(var(--gap-3) + 26px); font-size: var(--fs-xs); }
@@ -354,7 +361,10 @@
 }
 @media (max-width: 760px) { .doc-subject { display: none; } }
 @media (max-width: 620px) {
-  .doc-bar-r .btn[data-act="appearance"], .doc-bar-r .btn[data-act="study-doc"], .doc-bar-r .btn[data-act="focus"] { display: none; }
+  /* Six full-size buttons left about 100px for the note's name, which is
+     enough for "The …". Find moves into the ⋯ menu; the title gets the room. */
+  .doc-bar-r .btn[data-act="appearance"], .doc-bar-r .btn[data-act="study-doc"],
+  .doc-bar-r .btn[data-act="focus"], .doc-bar-r .btn[data-act="find"] { display: none; }
   .doc-bar { padding-inline: var(--gap-2); }
   .doc-bar-title { margin-left: var(--gap-1); }
   .doc-bar-r .btn-primary .lbl { display: none; }
@@ -678,6 +688,25 @@
 .turner[disabled] { cursor: default; }
 .turner[disabled]::after { opacity: 0 !important; }
 
+/* A full-height click strip is right for a cursor and wrong for a finger:
+   at phone width the two of them covered 44% of the screen, sitting on top
+   of the text, so you could not select a word near either margin — and
+   selecting text is most of what this app is for. On a touch screen the
+   zones move to the bottom corners, the way you actually turn a page in a
+   book, and swiping still works anywhere. */
+@media (pointer: coarse) {
+  [data-flow="paged"] .turner,
+  [data-flow="book"] .turner {
+    top: auto;
+    bottom: 0;
+    height: clamp(72px, 14%, 132px);
+    width: clamp(64px, 26%, 160px);
+    border-radius: var(--radius-lg);
+  }
+  .turner::after { width: 22px; height: 22px; opacity: .3; }
+  .turner:active::after { opacity: .7; }
+}
+
 .page-probe { display: block; width: 0; height: 1px; margin: 0; }
 
 /* The folio prints the page number; this stays as the live region that
@@ -703,5 +732,7 @@
   [data-flow="paged"] .page-frame, [data-flow="book"] .page-frame { border-radius: var(--radius); }
   [data-flow="paged"] .paper, [data-flow="book"] .paper { padding: calc(var(--gap-5) + 24px) var(--gap-5) calc(var(--gap-6) + 8px); }
   [data-dropcap="on"] .prose > p:first-of-type::first-letter { font-size: 2.6em; }
-  [data-flow="paged"] .turner, [data-flow="book"] .turner { width: 22%; }
+  @media (pointer: fine) {
+    [data-flow="paged"] .turner, [data-flow="book"] .turner { width: 22%; }
+  }
 }

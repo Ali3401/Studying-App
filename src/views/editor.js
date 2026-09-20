@@ -40,7 +40,16 @@ export const view = {
     setLayout(settings.get('edLayout'));
     updatePreview();
     setSaved(true);
-    requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
+    // On a desktop, landing in the text ready to type is the point. On a
+    // phone the same line throws the keyboard up over half the screen and
+    // scrolls to the bottom of the note before you have read a word of it,
+    // every time you open the editor. So there, start at the top and wait
+    // to be asked.
+    requestAnimationFrame(() => {
+      if (matchMedia('(pointer: coarse)').matches) { ta.scrollTop = 0; return; }
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    });
   },
   async unmount() {
     await commit(true);

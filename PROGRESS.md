@@ -198,6 +198,44 @@ or without `configure-pages`' `enablement: true`.
     third of the animation and looked like a flicker. The sheet keeps its
     easing; the band crosses linearly.
 
+26. **The phone was never driven, only screenshotted.** Static captures at
+    390px looked fine, so a set of touch-only faults survived every check:
+    what follows, 27 to 32, all came from actually driving a touch browser
+    through the app rather than photographing it.
+27. **The page-turn strips sat on top of the text.** `.turner` is 22% of the
+    width at each edge and full height, which is right for a cursor and wrong
+    for a finger: at phone width the pair covered 44% of the screen, so a word
+    within 56px of either margin could not be selected — and selecting text is
+    most of what this app is for. Under `(pointer: coarse)` they become bottom
+    corner zones, the way a book is actually turned; swiping still works
+    anywhere, and a fine pointer keeps the full strips.
+28. **Toolbar buttons shrank below the size they declared.** `--tap` was 38px
+    everywhere, and `.btn-icon` had no `flex: none`, so in a crowded bar flex
+    squeezed them to 31px. `--tap` is now 44px on coarse pointers (Apple's
+    guidance) and an icon button never shrinks.
+29. **The editor's title field collapsed to 16px.** `.doc-bar-l` is
+    `flex: 1 1 0%` with `min-width: 0`, so it gives up every pixel before the
+    controls beside it do: the note's name was a 16px sliver you could neither
+    read nor tap. The left group now has a pixel floor and the right group and
+    its buttons no longer shrink at all.
+30. **Done was pushed off the end of the bar.** Same root cause, other end:
+    with nothing declaring `flex: none`, the Done button shrank to 18px and
+    then past the right edge. Fixed by the same rule.
+31. **A phone-only rule collapsed a button whose label it could not hide.**
+    `.doc-bar-r .btn-primary` is forced to one tap wide with the label hidden
+    via `.lbl` — but Import's "Create note" and the guide's "Copy prompt" had
+    bare text nodes, so the text spilled 17px out of a 44px button. Both are
+    wrapped now.
+32. **Opening the editor threw the keyboard up and jumped to the bottom.**
+    `ta.focus()` plus a caret at `value.length` is right on a desktop and
+    hostile on a phone: half the screen disappears and you land at the end of
+    a note you have not read. On a coarse pointer it now opens at the top and
+    waits to be asked.
+33. **Sizing the hit area by resizing the element repainted it.**
+    `.accent-dot::after` already draws the colour swatch; growing it to 44px
+    grew the swatch, and the accent row became a pile of overlapping circles.
+    A hit area belongs on a pseudo-element nothing else is using.
+
 ---
 
 ## Things deliberately not done
@@ -215,6 +253,23 @@ or without `configure-pages`' `enablement: true`.
    regressions without a browser.
 2. Serve the folder and click through: library → reader → select text →
    highlight → edit → study → import.
+3. **Drive the phone, do not photograph it.** A 390px screenshot looks right
+   while the app is unusable: the page-turn strips lay on top of the text, the
+   editor's title field was 16px wide, Done had been pushed off the end of the
+   bar, and opening the editor threw the keyboard up. None of that shows in a
+   still. Launch a touch context (`isMobile`, `hasTouch`), then hit-test with
+   `elementFromPoint` over the reading column, measure every control against
+   44px, and check `scrollWidth > clientWidth` on each toolbar. Bugs 26–33
+   are what that found the first time it was run.
+
+   `node tools/phone-audit.mjs` does exactly that and exits non-zero, so it
+   does not have to be remembered. It needs Playwright — point `PLAYWRIGHT_PATH`
+   at it and `CHROME_PATH` at a Chromium if they are not resolvable by name.
+   Two lists in it are the contract: `HIT_AREA_ONLY` is for controls drawn
+   smaller than a fingertip on purpose, which must grow a hit area on a
+   pseudo-element instead (and are probed for one); `ALLOWED_SMALL` is for the
+   rare control that may stay small, and every entry needs the reason written
+   beside it.
 3. Keep this file current, and commit after each meaningful step.
 
 ---
@@ -267,6 +322,30 @@ do: work out from *meaning* which line was a heading and where a thought ends.
   goes back to that extracted text rather than rewriting the rewrite, which
   would compound whatever the first pass got wrong. Editing the Source tab by
   hand overrides that and sends what you typed.
+
+## Touch
+
+`--tap` is 38px, and 44px under `@media (pointer: coarse)` — Apple's minimum.
+Keying on the pointer rather than the width means an iPad gets it too, which
+a width query would have missed. Three rules follow from it:
+
+- **Nothing in a toolbar may shrink.** `.btn-icon`, `.doc-bar .btn` and
+  `.doc-bar-r` are all `flex: none`; only the note's title gives up space.
+  Without that, flex squeezed a 38px button to 31px, the editor's title field
+  to 16px, and the Done button off the end of the bar entirely.
+- **A control that is small on purpose grows a hit area, not a body.** Filter
+  tags and accent swatches keep their drawn size and gain an invisible
+  pseudo-element about a fingertip across. Use whichever of `::before` or
+  `::after` is free — `.accent-dot::after` already draws the swatch, and
+  resizing it turned the accent row into overlapping circles.
+- **A cursor affordance is not a finger affordance.** The page-turn strips are
+  22% of the width and full height, which is right for a mouse and covered 44%
+  of a phone screen, sitting on the text. On a coarse pointer they become
+  bottom corner zones instead, the way a book is actually turned.
+
+The editor also stops autofocusing its textarea on a coarse pointer: on a
+phone that threw the keyboard up over half the screen and scrolled to the
+bottom of the note, every time it was opened.
 
 ## Reading modes
 
