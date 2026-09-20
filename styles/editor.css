@@ -77,8 +77,10 @@
 .grade-2:hover { border-color: hsl(28 85% 58%); background: hsl(28 85% 58% /.1); }
 .grade-3:hover { border-color: hsl(158 62% 48%); background: hsl(158 62% 48% /.1); }
 .grade-4:hover { border-color: hsl(200 80% 56%); background: hsl(200 80% 56% /.1); }
-.study-done { display: grid; justify-items: center; gap: var(--gap-3); text-align: center; padding: 8vh var(--gap-4); }
+.study-done { display: grid; justify-items: center; gap: var(--gap-3); text-align: center; padding: 8vh var(--gap-4); width: min(620px, 100%); margin: 0 auto; }
 .done-mark { width: 74px; height: 74px; border-radius: 99px; display: grid; place-items: center; font-size: 2rem; color: var(--on-accent); background: var(--accent); box-shadow: 0 12px 34px -10px hsl(var(--accent-h) 80% 45% /.7); }
+.study-upnext { width: 100%; display: flex; flex-direction: column; gap: var(--gap-3); margin: var(--gap-3) 0; }
+.upnext-row { display: flex; gap: var(--gap-2); flex-wrap: wrap; justify-content: center; }
 .study-done h2 { font-family: var(--font-head); font-size: var(--fs-h2); font-weight: 680; letter-spacing: -.025em; }
 .study-done p { color: var(--ink-3); }
 

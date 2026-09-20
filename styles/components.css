@@ -109,6 +109,12 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .tag-btn:hover { background: var(--accent-soft); color: var(--accent-ink); }
 .tag-btn.is-on { background: var(--accent); color: var(--on-accent); }
 .chip-tag { height: 27px; font-size: var(--fs-xs); }
+.chip-due { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 4px;
+  border-radius: 99px; background: var(--accent); color: var(--on-accent); font-size: 10px; font-weight: 700; margin-left: 1px; }
+.chip.is-on .chip-due { background: var(--accent); color: var(--on-accent); }
+.chip-archive { color: var(--ink-4); }
+.chip-archive .i { width: .9em; height: .9em; }
+.chip-archive.is-on { background: var(--surface-hi); color: var(--ink); border-color: var(--line); }
 .chip-clear { height: 27px; font-size: var(--fs-xs); color: var(--ink-4); border-style: dashed; }
 .chip-clear .i { width: .85em; height: .85em; }
 

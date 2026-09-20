@@ -4,10 +4,12 @@ import { $, $$, el, fmtDate, countWords, readTime, norm, pluralize } from '../co
 import * as store from '../core/store.js';
 import * as settings from '../core/settings.js';
 import { menu, toast, confirmDialog } from '../ui/ui.js';
+import { dueBySubject, dueCountFor } from './study.js';
 import { go } from '../core/router.js';
 
 let filterSubject = '';
 let filterTags = new Set();
+let showArchived = false;
 let query = '';
 let bound = false;
 let actions = {};
@@ -48,6 +50,7 @@ function bind() {
   store.onChange(() => { if (!$('.view-library').hidden) render(); });
 }
 
+export const currentSubject = () => (showArchived ? '' : filterSubject);
 export function setQuery(q) { query = q; const i = $('#lib-search'); if (i) i.value = q; render(); }
 export function setSubject(s) { filterSubject = s; render(); }
 export function toggleTag(t) {
@@ -83,10 +86,11 @@ function matches(doc, q) {
 export function render() {
   const wrap = $('#lib-cards');
   if (!wrap) return;
-  const allDocs = store.all();
+  const allDocs = showArchived ? store.allIncludingArchived().filter(d => d.archived) : store.all();
+  const archivedCount = store.allIncludingArchived().filter(d => d.archived).length;
 
   // subject chips
-  const subs = store.subjects();
+  const subs = showArchived ? [] : store.subjects();
   const chips = $('#lib-subjects');
   chips.innerHTML = '';
   if (subs.length) {
@@ -94,12 +98,25 @@ export function render() {
       class: 'chip' + (filterSubject === '' ? ' is-on' : ''),
       onclick: () => { filterSubject = ''; render(); },
     }, el('span', { text: 'All' }), el('span', { class: 'n', text: String(allDocs.length) })));
+    const due = new Map(dueBySubject().map(d => [d.name, d.due]));
     for (const s of subs) {
       chips.append(el('button', {
         class: 'chip' + (filterSubject === s.name ? ' is-on' : ''),
+        title: due.get(s.name) ? `${due.get(s.name)} cards ready to review` : undefined,
         onclick: () => { filterSubject = filterSubject === s.name ? '' : s.name; render(); },
-      }, el('span', { text: s.name }), el('span', { class: 'n', text: String(s.n) })));
+      }, el('span', { text: s.name }),
+         el('span', { class: 'n', text: String(s.n) }),
+         due.get(s.name) ? el('span', { class: 'chip-due', text: String(due.get(s.name)) }) : null));
     }
+  }
+  if (archivedCount) {
+    chips.append(el('button', {
+      class: 'chip chip-archive' + (showArchived ? ' is-on' : ''),
+      title: showArchived ? 'Back to your notes' : 'Show archived notes',
+      onclick: () => { showArchived = !showArchived; filterSubject = ''; filterTags.clear(); render(); },
+    }, el('span', { class: 'i', dataset: { icon: 'archive' } }),
+       el('span', { text: showArchived ? 'Back' : 'Archived' }),
+       el('span', { class: 'n', text: String(archivedCount) })));
   }
 
   const inSubject = allDocs.filter(d => !filterSubject || d.subject === filterSubject);
@@ -133,7 +150,7 @@ export function render() {
   const words = allDocs.reduce((n, d) => n + store.derived(d).words, 0);
   const hls = allDocs.reduce((n, d) => n + (d.highlights || []).length, 0);
   const due = dueCount(allDocs);
-  $('#lib-greeting').textContent = greeting();
+  $('#lib-greeting').textContent = showArchived ? 'Archived' : greeting();
   $('#lib-stats').textContent = allDocs.length
     ? [
         pluralize(allDocs.length, 'note'),
@@ -144,7 +161,7 @@ export function render() {
     : 'Nothing saved yet — paste something in.';
 
   const empty = $('#lib-empty');
-  empty.hidden = allDocs.length > 0;
+  empty.hidden = allDocs.length > 0 || showArchived;
   wrap.hidden = allDocs.length === 0;
   wrap.innerHTML = '';
 
@@ -175,7 +192,7 @@ function greeting() {
 
 export function dueCount(docs = store.all()) {
   const now = Date.now();
-  return docs.reduce((n, d) => n + (d.cards || []).filter(c => (c.due || 0) <= now).length, 0);
+  return docs.reduce((n, d) => n + dueCountFor(d, now), 0);
 }
 
 function card(doc) {
@@ -221,6 +238,9 @@ function card(doc) {
         ? el('span', { class: 'ncard-hl' }, el('span', { class: 'sep' }), el('span', { class: 'i', dataset: { icon: 'marker' }, style: { width: '.9em', height: '.9em' } }), el('span', { text: String(doc.highlights.length) }))
         : null,
       el('span', { class: 'spacer' }),
+      dueCountFor(doc) ? el('span', { class: 'ncard-due', title: 'cards ready to review' },
+        el('span', { class: 'i', dataset: { icon: 'cards' }, style: { width: '.9em', height: '.9em' } }),
+        el('span', { text: String(dueCountFor(doc)) })) : null,
       pct > 2 ? ring(pct) : null,
     ),
   );
@@ -243,6 +263,12 @@ function openMenu(doc, pos) {
     { label: 'Open', icon: 'eye', fn: () => go('reader', { id: doc.id }) },
     { label: 'Edit', icon: 'pencil', fn: () => go('editor', { id: doc.id }) },
     { label: doc.pinned ? 'Unpin' : 'Pin to top', icon: 'pin', fn: async () => { doc.pinned = !doc.pinned; await store.save(doc, { touch: false }); render(); } },
+    { label: doc.archived ? 'Restore from archive' : 'Archive', icon: 'archive', fn: async () => {
+        doc.archived = !doc.archived;
+        await store.save(doc, { touch: false });
+        if (doc.archived && showArchived === false) toast('Archived', { icon: 'archive', action: { label: 'Undo', fn: async () => { doc.archived = false; await store.save(doc, { touch: false }); render(); } } });
+        render();
+      } },
     '-',
     { label: 'Study this note', icon: 'cards', fn: () => go('study', { id: doc.id }) },
     { label: 'Duplicate', icon: 'copy', fn: async () => { const c = await store.duplicate(doc.id); toast('Duplicated'); render(); } },

@@ -48,6 +48,7 @@ async function boot() {
   router.register('guide', guide.view);
 
   palette.setCommands(commands());
+  palette.setDynamicCommands(subjectCommands);
   wireGlobal();
   wireShortcuts();
 
@@ -95,6 +96,17 @@ function commands() {
   ];
 }
 
+/** One "Study <subject>" entry per subject that has cards waiting. */
+function subjectCommands() {
+  return study.dueBySubject().map(({ name, due }) => ({
+    label: `Study ${name}`,
+    icon: 'cards',
+    sub: `${due} due`,
+    keywords: 'revise flashcards subject ' + name,
+    fn: () => { palette.close(); router.go('study', { subject: name }); },
+  }));
+}
+
 function cycleTheme() {
   const ids = settings.THEMES.map(t => t.id);
   const i = ids.indexOf(settings.get('theme'));
@@ -115,7 +127,7 @@ function wireGlobal() {
     else if (act === 'open-settings' || act === 'appearance') openAppearance();
     else if (act === 'open-guide') router.go('guide');
     else if (act === 'open-search') palette.show();
-    else if (act === 'open-study-all') router.go('study');
+    else if (act === 'open-study-all') { const s = library.currentSubject(); router.go('study', s ? { subject: s } : {}); }
     else if (act === 'sheet-close') closeSheet();
     else if (act === 'lightbox-close') closeLightbox();
     else if (act === 'load-sample') loadSample();

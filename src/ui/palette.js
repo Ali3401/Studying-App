@@ -8,10 +8,12 @@ let open = false;
 let items = [];
 let active = 0;
 let commands = [];
+let dynamic = () => [];
 let bound = false;
 
 export const isOpen = () => open;
 export function setCommands(list) { commands = list; }
+export function setDynamicCommands(fn) { dynamic = fn; }
 
 export function toggle() { open ? close() : show(); }
 
@@ -43,7 +45,7 @@ function search(q) {
   items = [];
 
   const query = q.trim();
-  const cmds = commands
+  const cmds = [...commands, ...dynamic()]
     .map(c => ({ ...c, score: query ? fuzzy(query, c.label + ' ' + (c.keywords || '')) : 0 }))
     .filter(c => !query || c.score > 0)
     .sort((a, b) => b.score - a.score)

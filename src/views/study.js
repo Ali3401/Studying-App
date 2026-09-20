@@ -1,6 +1,6 @@
 /* Lucid — spaced repetition over ::: quiz blocks and cards made from highlights. */
 
-import { $, $$, el, shuffle, uid, pluralize } from '../core/util.js';
+import { $, $$, el, add, shuffle, uid, pluralize, fmtDate } from '../core/util.js';
 import * as store from '../core/store.js';
 import * as settings from '../core/settings.js';
 import { inline } from '../parse/lmd.js';
@@ -11,16 +11,18 @@ const DAY = 86400000;
 let queue = [];
 let idx = 0;
 let shown = false;
-let scope = null;      // doc id, or null for everything
+let scope = null;      // doc id, or null
+let subject = null;    // subject name, or null for everything
 let bound = false;
 let stats = { done: 0, again: 0 };
 
 export const view = {
-  async mount({ id }) {
+  async mount(params = {}) {
     bind();
-    scope = id || null;
+    scope = params.id || null;
+    subject = params.subject || null;
     await build();
-    $('#study-title').textContent = scope ? (store.get(scope)?.title || 'Study') : 'Study everything due';
+    $('#study-title').textContent = scopeName();
     next(true);
   },
   async unmount() { await store.flush(); },
@@ -52,8 +54,19 @@ export function syncCards(doc) {
   return doc.cards;
 }
 
+const scopeName = () =>
+  scope ? (store.get(scope)?.title || 'Study')
+    : subject ? `Study ${subject}`
+    : 'Study everything due';
+
+function scopedDocs() {
+  if (scope) return [store.get(scope)].filter(Boolean);
+  if (subject) return store.all().filter(d => (d.subject || '').trim() === subject);
+  return store.all();
+}
+
 async function build({ all = false } = {}) {
-  const docs = scope ? [store.get(scope)].filter(Boolean) : store.all();
+  const docs = scopedDocs();
   docs.forEach(syncCards);
   const now = Date.now();
   const items = [];
@@ -83,24 +96,28 @@ function next(first = false) {
   $('#flash-a-wrap').hidden = true;
 
   $('#study-bar').style.width = total ? `${Math.round((idx / total) * 100)}%` : '0%';
-  $('#study-counter').textContent = total ? `${Math.min(idx + 1, total)} / ${total}` : '';
+  $('#study-counter').textContent = done || !total ? '' : `${Math.min(idx + 1, total)} / ${total}`;
 
   if (done) {
     const sub = total
       ? `${pluralize(stats.done, 'card')} reviewed${stats.again ? `, ${stats.again} to see again` : ''}. Nice.`
       : scope
         ? 'This note has no cards yet. Add a ::: quiz block, or highlight something and turn it into a card.'
-        : 'No cards are due right now. Come back later, or study everything anyway.';
+        : subject
+          ? `Nothing is due in ${subject} right now. Come back later, or study it all anyway.`
+          : 'No cards are due right now. Come back later, or study everything anyway.';
+    $('#study-title').textContent = scopeName();
     $('#study-done-sub').textContent = sub;
     const again = $('[data-act="study-again"]');
-    if (again) again.textContent = total ? 'Study again' : 'Study everything anyway';
+    if (again) again.textContent = total ? 'Study again' : (scope || subject) ? 'Study it all anyway' : 'Study everything anyway';
+    renderUpNext();
     return;
   }
 
   const { doc, card } = queue[idx];
   $('#flash-q').innerHTML = inline(card.q, { img: s => store.resolveImage(s) });
   $('#flash-a').innerHTML = renderAnswer(card.a);
-  $('#study-title').textContent = scope ? doc.title : `Study · ${doc.title}`;
+  $('#study-title').textContent = scope ? doc.title : `${scopeName()} · ${doc.title}`;
   if (first) $('#study-bar').style.width = '0%';
 }
 
@@ -119,6 +136,37 @@ function reveal() {
   $('#flash-a-wrap').hidden = false;
   $('#flash-actions').hidden = true;
   $('#flash-grades').hidden = false;
+}
+
+/** What is waiting after this session — the whole library, not just the scope. */
+function renderUpNext() {
+  const wrap = $('#study-upnext');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  const all = store.all();
+  const { due, total, soon } = dueSummary(all);
+  const next = all.flatMap(d => d.cards || []).map(c => c.due || 0).filter(d => d > Date.now()).sort((a, b) => a - b)[0];
+
+  if (!total) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+
+  add(wrap,
+    el('div', { class: 'stat-grid' },
+      el('div', { class: 'stat' }, el('b', { text: String(due) }), el('span', { text: 'due now' })),
+      el('div', { class: 'stat' }, el('b', { text: String(soon) }), el('span', { text: 'this week' })),
+      el('div', { class: 'stat' }, el('b', { text: String(total) }), el('span', { text: 'cards in total' })),
+    ),
+    next && !due ? el('p', { class: 'hint', style: { textAlign: 'center' }, text: `The next card comes back ${fmtDate(next).replace(/^just now$/, 'in a moment')}.` }) : null,
+  );
+
+  const others = dueBySubject().filter(s => s.name !== subject);
+  if (others.length) {
+    add(wrap, el('div', { class: 'upnext-row' },
+      ...others.slice(0, 4).map(s => el('button', {
+        class: 'chip', onclick: () => { scope = null; subject = s.name; view.mount({ subject: s.name }); },
+      }, el('span', { text: s.name }), el('span', { class: 'n', text: String(s.due) })))));
+  }
 }
 
 /* ---------------- scheduling (SM-2, lightly tuned) ---------------- */
@@ -191,11 +239,47 @@ export const keys = {
   skip() { if (idx < queue.length) { idx++; next(); } },
 };
 
-export function dueSummary() {
+/**
+ * Questions in ::: quiz blocks that have not been turned into cards yet.
+ * They only become real cards when a study session starts, so anything
+ * counting what is waiting has to include them.
+ */
+export function pendingQuizCount(doc) {
+  const have = new Set((doc.cards || []).filter(c => c.from === 'quiz').map(c => c.q));
+  return store.derived(doc).quiz.filter(q => q.q && q.a && !have.has(q.q)).length;
+}
+
+/** Cards ready to review in one note, counting the ones not yet created. */
+export function dueCountFor(doc, now = Date.now()) {
+  return (doc.cards || []).filter(c => (c.due || 0) <= now).length + pendingQuizCount(doc);
+}
+
+export function dueSummary(docs = store.all()) {
   const now = Date.now();
-  let due = 0, total = 0;
-  for (const doc of store.all()) {
-    for (const c of doc.cards || []) { total++; if ((c.due || 0) <= now) due++; }
+  const week = now + 7 * 86400000;
+  let due = 0, total = 0, soon = 0;
+  for (const doc of docs) {
+    const pending = pendingQuizCount(doc);
+    due += pending; total += pending;
+    for (const c of doc.cards || []) {
+      total++;
+      const d = c.due || 0;
+      if (d <= now) due++;
+      else if (d <= week) soon++;
+    }
   }
-  return { due, total };
+  return { due, total, soon };
+}
+
+/** Cards due, per subject — used by the library and the palette. */
+export function dueBySubject() {
+  const now = Date.now();
+  const m = new Map();
+  for (const doc of store.all()) {
+    const key = (doc.subject || '').trim();
+    if (!key) continue;
+    const n = dueCountFor(doc, now);
+    if (n) m.set(key, (m.get(key) || 0) + n);
+  }
+  return Array.from(m, ([name, due]) => ({ name, due })).sort((a, b) => b.due - a.due);
 }

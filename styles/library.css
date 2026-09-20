@@ -50,6 +50,7 @@
 .ncard-foot .sep { width: 3px; height: 3px; border-radius: 99px; background: currentColor; opacity: .5; }
 .ncard-foot .spacer { flex: 1; }
 .ncard-hl { display: inline-flex; align-items: center; gap: 3px; }
+.ncard-due { display: inline-flex; align-items: center; gap: 3px; color: var(--accent); font-weight: 650; }
 .ring { width: 22px; height: 22px; flex: none; transform: rotate(-90deg); }
 .ring circle { fill: none; stroke-width: 3; }
 .ring .bgc { stroke: var(--line); }

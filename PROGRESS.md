@@ -99,6 +99,10 @@ workflow cannot enable it.
     `Element.append()` stringifies them, so a note with no subject or no
     quiz rendered the word "null". Use `add()` from `core/util.js` for any
     append with a conditional child.
+12. **Nothing looked due until you had already studied.** Cards only exist
+    once `syncCards()` has run, so a freshly imported note with ten quiz
+    questions reported zero due. `dueCountFor()` counts the questions that
+    have no card yet, and every counter goes through it.
 
 ---
 
@@ -136,11 +140,17 @@ Ordered by how much they actually matter to someone using this to study.
 4. ~~**Next / previous note in the reader.**~~ Done — cards at the foot of
    every note, `[` and `]` on the keyboard, ordered naturally so "Lecture 2"
    comes before "Lecture 10".
-5. **Study a single subject**, not just one note or everything.
-6. **Archive UI.** The `archived` flag exists with no way to set it.
+5. ~~**Study a single subject.**~~ Done — `#/study?subject=…`, reachable from
+   the Study button while a subject is filtered, and from the palette
+   ("Study Physiology · 7 due"). The finished screen offers the other
+   subjects that still have cards waiting.
+6. ~~**Archive UI.**~~ Done — an Archive item in the note menu, an "Archived"
+   chip that switches the library into an archive view, and Undo on the
+   toast.
 7. **Focus handling in overlays.** Trap Tab inside the sheet and the palette,
    and return focus to whatever opened them.
-8. **Study stats.** Cards due today, a streak, what is coming this week.
+8. **Study stats.** Partly done — the finished screen shows due now / this
+   week / total, and subject chips carry a due badge. A streak is still open.
 9. **Reader gestures.** Swipe from the left edge to open the outline on
    iPad.
 10. **Duplicate detection.** Warn before creating a second copy of a note that
