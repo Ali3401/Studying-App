@@ -19,19 +19,19 @@ export const THEMES = [
 export const PRESETS = [
   {
     id: 'lucid', name: 'Lucid', hint: 'The default — a calm screen, one continuous page.',
-    values: { theme: 'midnight', font: 'editorial', flow: 'scroll', callouts: 'panel',
+    values: { theme: 'midnight', font: 'editorial', flow: 'scroll', callouts: 'panel', dropcap: 'off',
       align: 'left', hyphens: false, paraIndent: 0, paraSpace: 1.15, headings: 'plain',
       texture: 'plain', paper: 'flat', measure: 68, lineHeight: 1.7, accent: 'blue' },
   },
   {
     id: 'book', name: 'Book', hint: 'A printed page: warm stock, two pages open, indented paragraphs.',
-    values: { theme: 'book', font: 'classic', flow: 'book', callouts: 'quiet',
+    values: { theme: 'book', font: 'classic', flow: 'book', callouts: 'quiet', dropcap: 'on',
       align: 'justify', hyphens: true, paraIndent: 1.3, paraSpace: 0.15, headings: 'plain',
       texture: 'plain', paper: 'flat', measure: 64, lineHeight: 1.62, accent: 'crimson' },
   },
   {
     id: 'paper', name: 'Manuscript', hint: 'Daylight, one page at a time, plenty of air.',
-    values: { theme: 'paper', font: 'book', flow: 'paged', callouts: 'quiet',
+    values: { theme: 'paper', font: 'book', flow: 'paged', callouts: 'quiet', dropcap: 'on',
       align: 'left', hyphens: false, paraIndent: 0, paraSpace: 1.2, headings: 'rule',
       texture: 'plain', paper: 'flat', measure: 66, lineHeight: 1.75, accent: 'slate' },
   },
@@ -101,6 +101,7 @@ export const DEFAULTS = {
   spotlight: 'off',
   flow: 'scroll',        // scroll | paged | book
   callouts: 'panel',     // panel | quiet
+  dropcap: 'off',        // on | off — the big opening letter, paged reading
   libLayout: 'grid',
   libSort: 'updated',
   showOutline: true,
@@ -173,6 +174,7 @@ export function apply() {
   r.dataset.spotlight = s.spotlight;
   r.dataset.flow = s.flow;
   r.dataset.callouts = s.callouts;
+  r.dataset.dropcap = s.dropcap;
 
   const st = r.style;
   st.setProperty('--font-scale', s.fontScale);

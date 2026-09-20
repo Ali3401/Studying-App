@@ -477,6 +477,7 @@ const updateProgress = throttle(() => {
   const main = $('#read-main');
   if (!main || !doc) return;
 
+  paintBookChrome();
   let p, activeId = null;
 
   if (pager?.paged) {
@@ -503,6 +504,71 @@ const updateProgress = throttle(() => {
   if (Math.abs(p - (doc.progress || 0)) > 0.005) { doc.progress = p; saveProgress(); }
   $$('#outline-list .o-item').forEach(b => b.classList.toggle('is-on', b.dataset.target === activeId));
 }, 120);
+
+/* ---------------- book chrome ----------------
+   The running head and the folio belong to the frame, not to the sheet: the
+   sheet slides sideways when you turn, and a page number that slid with it
+   would be a page number for the wrong page.  A printed book leaves the
+   opening page bare, so the running head only appears from page two on. */
+
+function paintBookChrome() {
+  const frame = $('#page-frame');
+  if (!frame) return;
+
+  if (!pager?.paged) {
+    frame.classList.remove('has-head');
+    $('#head-l').textContent = '';
+    $('#head-r').textContent = '';
+    $('#folio-l').textContent = '';
+    $('#folio-r').textContent = '';
+    return;
+  }
+
+  // Verso carries the book, recto carries the chapter — a single page just
+  // carries the book, centred.
+  const title = (doc?.title || '').trim();
+  const section = pager.cols > 1 ? sectionOnPage() : '';
+  $('#head-l').textContent = title;
+  $('#head-r').textContent = section === title ? '' : section;
+  frame.classList.toggle('has-head', !!(title || section) && pager.index > 0);
+
+  // In a spread each turn shows two leaves, so the folio counts leaves, not
+  // turns — and the last turn of an odd book has nothing on its right page.
+  const cols = pager.cols;
+  const first = pager.index * cols + 1;
+  const total = pager.count * cols;
+  if (cols > 1) {
+    $('#folio-l').textContent = String(first);
+    $('#folio-r').textContent = first + 1 <= total ? String(first + 1) : '';
+  } else {
+    $('#folio-l').textContent = pager.count > 1 ? String(first) : '';
+    $('#folio-r').textContent = '';
+  }
+}
+
+/** The last heading that has already begun on, or before, this page. */
+function sectionOnPage() {
+  if (!pager?.paged) return '';
+  let text = '';
+  for (const h of outlineData) {
+    const node = document.getElementById(h.id);
+    if (node && pager.pageOf(node) <= pager.index) text = h.text;
+  }
+  return text;
+}
+
+let turnFxTimer = 0;
+
+/** A shadow sweeps across the block in the direction you turned. */
+function playTurn(direction) {
+  const frame = $('#page-frame');
+  if (!frame || !direction || settings.get('motion') === 'off') return;
+  frame.classList.remove('turning-next', 'turning-prev');
+  void frame.offsetWidth;                       // restart the animation
+  frame.classList.add(direction > 0 ? 'turning-next' : 'turning-prev');
+  clearTimeout(turnFxTimer);
+  turnFxTimer = setTimeout(() => frame.classList.remove('turning-next', 'turning-prev'), 1200);
+}
 
 /* ---------------- find in note ---------------- */
 
@@ -596,7 +662,7 @@ function bind() {
   pager = createPager({
     viewport: main,
     sheet: $('#paper'),
-    onChange: () => { hidePopover(); },
+    onChange: ({ direction }) => { hidePopover(); playTurn(direction); paintBookChrome(); },
   });
   $('#turn-prev').addEventListener('click', () => { pager.prev(); updateProgress(); });
   $('#turn-next').addEventListener('click', () => { pager.next(); updateProgress(); });

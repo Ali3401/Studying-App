@@ -162,6 +162,8 @@ function typeTab(root) {
       el('h4', { text: 'Headings' }),
       optionRow('Style', [{ id: 'plain', name: 'Plain' }, { id: 'accented', name: 'Accented' }, { id: 'numbered', name: 'Numbered' }, { id: 'rule', name: 'Ruled' }], S('headings'), v => set({ headings: v })),
       sliderRow('Weight', { min: 500, max: 850, step: 10, value: S('headingWeight'), format: v => String(v), onInput: v => set({ headingWeight: v }) }).node,
+      toggleRow('Drop capital', S('dropcap') === 'on', v => set({ dropcap: v ? 'on' : 'off' }),
+        'The first letter of a note set large, the way a book opens a chapter.'),
     ),
   );
 }

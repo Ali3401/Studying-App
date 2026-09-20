@@ -18,16 +18,19 @@ export function createPager({ viewport, sheet, onChange }) {
   let index = 0;
   let count = 1;
   let step = 0;          // distance between one page (or spread) and the next
+  let cols = 1;          // leaves visible at once: 1 for a page, 2 for a spread
+  let padL = 0;          // the sheet's left padding, so offsets stay in the flow
 
   const isPaged = () => mode !== 'scroll';
 
   function measure() {
-    if (!isPaged()) { count = 1; index = 0; step = 0; return; }
+    if (!isPaged()) { count = 1; index = 0; step = 0; cols = 1; return; }
 
     const cs = getComputedStyle(sheet);
-    const padL = parseFloat(cs.paddingLeft) || 0;
+    padL = parseFloat(cs.paddingLeft) || 0;
     const padR = parseFloat(cs.paddingRight) || 0;
     const gap = parseFloat(cs.columnGap) || 0;
+    cols = Math.max(1, parseInt(cs.columnCount, 10) || 1);
 
     // Columns live in the content box, so one page advances by the content
     // width plus a gap — not by the element's width, which includes padding.
@@ -56,9 +59,9 @@ export function createPager({ viewport, sheet, onChange }) {
     requestAnimationFrame(() => sheet.classList.remove('no-turn'));
   }
 
-  function apply() {
+  function apply(direction = 0) {
     sheet.style.setProperty('--page-x', isPaged() ? `${-index * step}px` : '0px');
-    onChange?.({ index, count, mode });
+    onChange?.({ index, count, mode, direction });
   }
 
   function go(i, { animate = true } = {}) {
@@ -66,8 +69,9 @@ export function createPager({ viewport, sheet, onChange }) {
     const next = clamp(Math.round(i), 0, count - 1);
     if (next === index) { apply(); return false; }
     if (!animate) sheet.classList.add('no-turn');
+    const direction = next > index ? 1 : -1;
     index = next;
-    apply();
+    apply(animate ? direction : 0);
     if (!animate) requestAnimationFrame(() => sheet.classList.remove('no-turn'));
     return true;
   }
@@ -75,11 +79,14 @@ export function createPager({ viewport, sheet, onChange }) {
   const next = () => go(index + 1);
   const prev = () => go(index - 1);
 
-  /** Which page an element has landed on, now that the text has reflowed. */
+  /** Which page an element has landed on, now that the text has reflowed.
+
+      Measured against the sheet rather than the window: mid-turn the sheet
+      is part-way through its translate, and so is everything inside it, so
+      the difference between the two is the only stable number here. */
   function pageOf(el) {
     if (!isPaged() || !el || !step) return 0;
-    const sheetLeft = sheet.getBoundingClientRect().left + index * step;
-    const left = el.getBoundingClientRect().left - sheetLeft;
+    const left = el.getBoundingClientRect().left - sheet.getBoundingClientRect().left - padL;
     return clamp(Math.floor(left / step + 0.001), 0, count - 1);
   }
 
@@ -107,6 +114,7 @@ export function createPager({ viewport, sheet, onChange }) {
     get index() { return index; },
     get count() { return count; },
     get mode() { return mode; },
+    get cols() { return cols; },
     get paged() { return isPaged(); },
   };
 }

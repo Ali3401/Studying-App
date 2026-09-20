@@ -369,25 +369,213 @@
    changes. Turning a page is a translate.
    ========================================================================== */
 
+/* The main area stops being the page and becomes the desk the book lies on:
+   a step darker than the paper, with room around the block so the page can
+   cast a shadow and show its edges. */
 [data-flow="paged"] .read-main,
 [data-flow="book"] .read-main {
   overflow: hidden;
   display: flex;
+  align-items: stretch;
   justify-content: center;
   scroll-behavior: auto;
-  background-color: var(--paper);
+  background-color: var(--desk, var(--bg));
+  background-image: none;
+  padding: clamp(8px, 2.4vh, 30px) clamp(8px, 2.5vw, 44px);
 }
 
 /* The frame is what clips: the page slides inside it, so neighbouring
-   columns can never appear in the margins beside a narrow page. */
+   columns can never appear in the margins beside a narrow page.  It is also
+   the physical sheet — background, corners, shadow and edges all live here,
+   because the article inside it is translating and must not carry them. */
 .page-frame { display: contents; }
 
 [data-flow="paged"] .page-frame,
 [data-flow="book"] .page-frame {
   display: block;
+  position: relative;
   height: 100%;
   overflow: hidden;
+  background-color: var(--paper);
+  background-image: var(--texture, none);
+  background-size: var(--texture-size, auto);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 0 0 var(--border-w) var(--line-soft),
+    0 2px 4px rgb(0 0 0 / calc(.10 * var(--shadow-strength))),
+    0 18px 48px -18px rgb(0 0 0 / calc(.45 * var(--shadow-strength)));
 }
+
+/* ---------- the edges of the block of paper ----------
+   The frame clips, so the stack of leaves is drawn just inside the outer
+   margin rather than sticking out past it: fine ruled lines that read as
+   the cut edge of the sheets below this one, and a soft darkening where the
+   paper curves down into the binding. */
+[data-flow="paged"] .page-frame::after,
+[data-flow="book"] .page-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  /* Mixed from the ink rather than fixed to black, so the edges stay
+     visible on a dark stock as well as on a white one. */
+  --edge-1: color-mix(in srgb, var(--ink) 13%, transparent);
+  --edge-2: color-mix(in srgb, var(--ink) 8%, transparent);
+  --leaf: repeating-linear-gradient(90deg, var(--edge-1) 0 1px, transparent 1px 4px);
+}
+
+/* one page: bound on the left, cut edge on the right */
+[data-flow="paged"] .page-frame::after {
+  background:
+    linear-gradient(90deg, var(--edge-2), transparent 14px) left / 14px 100% no-repeat,
+    var(--leaf) right / 11px 100% no-repeat,
+    linear-gradient(90deg, transparent, var(--edge-2)) right / 11px 100% no-repeat;
+}
+
+/* a spread: bound in the middle, cut edges on both sides */
+[data-flow="book"] .page-frame::after {
+  background:
+    var(--leaf) left / 11px 100% no-repeat,
+    linear-gradient(90deg, var(--edge-2), transparent) left / 11px 100% no-repeat,
+    var(--leaf) right / 11px 100% no-repeat,
+    linear-gradient(90deg, transparent, var(--edge-2)) right / 11px 100% no-repeat;
+}
+
+/* the spine: two pages meeting, with the gutter shadow falling either way.
+   It belongs to the frame, not the sheet — the sheet slides, the spine does
+   not. */
+[data-flow="book"] .page-frame::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: clamp(26px, 4%, 54px);
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--ink) 5%, transparent) 38%,
+      color-mix(in srgb, var(--ink) 11%, transparent) 49%,
+      color-mix(in srgb, var(--ink) 11%, transparent) 51%,
+      color-mix(in srgb, var(--ink) 5%, transparent) 62%,
+      transparent 100%);
+}
+
+/* ---------- running head and folio ---------- */
+.running-head, .folio { display: none; }
+
+[data-flow="paged"] .running-head,
+[data-flow="book"] .running-head {
+  display: flex;
+  gap: var(--gap-5);
+  position: absolute;
+  top: clamp(12px, 2.2vh, 22px);
+  left: 0; right: 0;
+  z-index: 2;
+  padding-inline: calc(var(--gap-6) + 10px);
+  font-family: var(--font-head);
+  font-size: var(--fs-xs);
+  font-weight: 560;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  opacity: 0;
+  transition: opacity var(--t-mid) var(--ease);
+  pointer-events: none;
+}
+.running-head span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.running-head span:empty { display: none; }
+.page-frame.has-head .running-head { opacity: .8; }
+
+/* One page carries the title, centred, with the hairline a printed page
+   rules under it.  A spread carries the book on the verso and the chapter
+   on the recto, the way a bound book does — and no rule, because a rule
+   across a spread would run straight through the spine. */
+[data-flow="paged"] .running-head { justify-content: center; }
+[data-flow="book"]  .running-head { justify-content: space-between; }
+[data-flow="book"]  .running-head #head-r { text-align: right; }
+
+[data-flow="paged"] .running-head span::after {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 1px;
+  margin: 6px auto 0;
+  background: currentColor;
+  opacity: .35;
+}
+
+[data-flow="paged"] .folio,
+[data-flow="book"] .folio {
+  display: flex;
+  position: absolute;
+  bottom: clamp(10px, 1.8vh, 20px);
+  left: 0; right: 0;
+  z-index: 2;
+  padding-inline: calc(var(--gap-6) + 10px);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums oldstyle-nums;
+  letter-spacing: .08em;
+  color: var(--ink-4);
+  pointer-events: none;
+}
+[data-flow="paged"] .folio { justify-content: center; }
+[data-flow="book"]  .folio { justify-content: space-between; }
+.folio span:empty { display: none; }
+
+/* ---------- the turn ----------
+   A band of shadow sweeps across the block in the direction of travel, the
+   way the leaf you are lifting shades the page beneath it. */
+.page-turn-fx { display: none; }
+
+[data-flow="paged"] .page-turn-fx,
+[data-flow="book"] .page-turn-fx {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: inherit;
+}
+.page-turn-fx::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: -40%;
+  width: 40%;
+  background: linear-gradient(90deg,
+    transparent, rgb(0 0 0 / .055) 35%, rgb(0 0 0 / .12) 50%, rgb(0 0 0 / .055) 65%, transparent);
+}
+.page-frame.turning-next .page-turn-fx,
+.page-frame.turning-prev .page-turn-fx { animation: leafFade var(--t-mid) var(--ease); }
+.page-frame.turning-next .page-turn-fx::before { animation: leafNext var(--t-mid) var(--ease); }
+.page-frame.turning-prev .page-turn-fx::before { animation: leafPrev var(--t-mid) var(--ease); }
+
+@keyframes leafFade { 0% { opacity: 0; } 18% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes leafNext { from { transform: translateX(0); }      to { transform: translateX(350%); } }
+@keyframes leafPrev { from { transform: translateX(350%); }   to { transform: translateX(0); } }
+
+/* ---------- the opening letter ---------- */
+[data-dropcap="on"] .prose > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--font-head);
+  font-size: 3.1em;
+  line-height: .82;
+  font-weight: var(--heading-weight);
+  padding: .06em .09em 0 0;
+  margin: .04em .04em 0 0;
+  color: var(--ink);
+}
+[data-dropcap="on"] .prose > p:first-of-type::first-line { letter-spacing: .01em; }
 
 [data-flow="paged"] .paper,
 [data-flow="book"] .paper {
@@ -398,7 +586,9 @@
   border: 0;
   box-shadow: none;
   background: transparent;
-  padding: var(--gap-6) var(--gap-5) var(--gap-5);
+  position: relative;
+  z-index: 1;
+  padding: calc(var(--gap-6) + 18px) var(--gap-6) calc(var(--gap-5) + 18px);
   column-gap: var(--gap-7);
   column-fill: auto;
   transform: translateX(var(--page-x, 0px));
@@ -414,12 +604,6 @@
 [data-flow="paged"] .paper { column-count: 1; }
 [data-flow="book"]  .paper { column-count: 2; }
 
-/* the fold down the middle of an open book */
-[data-flow="book"] .read-main::after {
-  content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;
-  background: linear-gradient(transparent, var(--line) 12%, var(--line) 88%, transparent);
-  opacity: .55; pointer-events: none;
-}
 [data-flow="book"] .read-shell, [data-flow="paged"] .read-shell { position: relative; }
 
 /* nothing may be orphaned across a page break */
@@ -464,20 +648,28 @@
 
 .page-probe { display: block; width: 0; height: 1px; margin: 0; }
 
+/* The folio prints the page number; this stays as the live region that
+   announces the turn to a screen reader, and is never seen. */
 .page-count {
-  display: none; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-  z-index: 12; color: var(--ink-4); font-size: var(--fs-xs); font-variant-numeric: tabular-nums;
-  letter-spacing: .04em; pointer-events: none;
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
 }
-[data-flow="paged"] .page-count, [data-flow="book"] .page-probe { display: block; width: 0; height: 1px; margin: 0; }
-
-.page-count { display: block; }
 
 @media (max-width: 720px) {
   /* a phone has no room for a spread */
   [data-flow="book"] .page-frame { width: min(calc(var(--measure) + var(--gap-7) * 2), 100%); }
   [data-flow="book"] .paper { column-count: 1; }
-  [data-flow="book"] .read-main::after { display: none; }
-  [data-flow="paged"] .paper, [data-flow="book"] .paper { padding: var(--gap-5) var(--gap-4) var(--gap-6); }
+  [data-flow="book"] .page-frame::before { display: none; }
+  [data-flow="book"] .folio { justify-content: center; }
+  [data-flow="book"] .page-frame::after {
+    background:
+      linear-gradient(90deg, var(--edge-2), transparent 14px) left / 14px 100% no-repeat,
+      var(--leaf) right / 11px 100% no-repeat,
+      linear-gradient(90deg, transparent, var(--edge-2)) right / 11px 100% no-repeat;
+  }
+  [data-flow="paged"] .read-main, [data-flow="book"] .read-main { padding: 6px; }
+  [data-flow="paged"] .page-frame, [data-flow="book"] .page-frame { border-radius: var(--radius); }
+  [data-flow="paged"] .paper, [data-flow="book"] .paper { padding: calc(var(--gap-5) + 24px) var(--gap-5) calc(var(--gap-6) + 8px); }
+  [data-dropcap="on"] .prose > p:first-of-type::first-letter { font-size: 2.6em; }
   [data-flow="paged"] .turner, [data-flow="book"] .turner { width: 22%; }
 }
