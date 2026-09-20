@@ -1,6 +1,6 @@
 /* Lucid — shared UI primitives: toasts, side sheet, context menu, lightbox. */
 
-import { $, el } from '../core/util.js';
+import { $, el, add } from '../core/util.js';
 
 /* ---------------- toasts ---------------- */
 const stack = () => $('#toasts');
@@ -46,8 +46,8 @@ export function sheet({ title, body, foot, wide = false, onClose } = {}) {
   $('#sheet-title').textContent = title || '';
   const b = $('#sheet-body'); b.innerHTML = '';
   const f = $('#sheet-foot'); f.innerHTML = '';
-  if (body) b.append(...(Array.isArray(body) ? body : [body]));
-  if (foot) f.append(...(Array.isArray(foot) ? foot : [foot]));
+  if (body) add(b, Array.isArray(body) ? body : [body]);
+  if (foot) add(f, Array.isArray(foot) ? foot : [foot]);
   node.hidden = false;
   showScrim(closeSheet);
   sheetClose = () => { onClose?.(); };

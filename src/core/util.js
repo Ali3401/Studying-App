@@ -29,6 +29,19 @@ export function el(tag, props = {}, ...children) {
   return node;
 }
 
+/**
+ * Append children, skipping the empty ones. Element.append() turns null into
+ * the literal text "null", which el() does not — so anything built with a
+ * conditional child has to come through here.
+ */
+export function add(parent, ...children) {
+  for (const c of children.flat()) {
+    if (c === null || c === undefined || c === false || c === '') continue;
+    parent.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return parent;
+}
+
 export const uid = (p = 'x') =>
   p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
@@ -181,6 +194,10 @@ export function shuffle(arr) {
 }
 
 export const todayStr = () => new Date().toISOString().slice(0, 10);
+
+/** Sort titles the way a person would: "Lecture 2" before "Lecture 10". */
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+export const naturalCompare = (a, b) => collator.compare(String(a || ''), String(b || ''));
 
 export function pluralize(n, one, many) {
   return `${n} ${n === 1 ? one : (many || one + 's')}`;

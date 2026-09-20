@@ -241,6 +241,8 @@ function wireShortcuts() {
       if (e.key.toLowerCase() === 'n' && k.hasSelection()) { e.preventDefault(); k.note(); return; }
       if (e.key.toLowerCase() === 'c' && k.hasSelection()) { e.preventDefault(); k.card(); return; }
       if ((e.key === 'Backspace' || e.key === 'Delete') && k.hasSelection()) { e.preventDefault(); k.clear(); return; }
+      if (e.key === '[') { e.preventDefault(); k.step(-1); return; }
+      if (e.key === ']') { e.preventDefault(); k.step(1); return; }
       if (e.key.toLowerCase() === 'f') { e.preventDefault(); k.focus(); return; }
       if (e.key.toLowerCase() === 'j') { k.scroll(180); return; }
       if (e.key.toLowerCase() === 'k') { k.scroll(-180); return; }

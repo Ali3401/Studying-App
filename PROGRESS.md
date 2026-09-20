@@ -95,6 +95,10 @@ workflow cannot enable it.
    otherwise the fields win and get written back.
 10. **Pinned notes did not sort first** when another note had
     `pinned: undefined`. Coerced in `normalize()` and in the comparator.
+11. **`null` printed into the page.** `el()` skips null children but
+    `Element.append()` stringifies them, so a note with no subject or no
+    quiz rendered the word "null". Use `add()` from `core/util.js` for any
+    append with a conditional child.
 
 ---
 
@@ -129,8 +133,9 @@ Ordered by how much they actually matter to someone using this to study.
 3. ~~**Tag filtering.**~~ Done — a tag row under the subjects, scoped to the
    subject in view; tags on the cards are buttons too; multiple tags narrow
    (AND), and the empty state names what it looked for.
-4. **Next / previous note in the reader.** Reaching the end of a note should
-   offer the next one in the same subject.
+4. ~~**Next / previous note in the reader.**~~ Done — cards at the foot of
+   every note, `[` and `]` on the keyboard, ordered naturally so "Lecture 2"
+   comes before "Lecture 10".
 5. **Study a single subject**, not just one note or everything.
 6. **Archive UI.** The `archived` flag exists with no way to set it.
 7. **Focus handling in overlays.** Trap Tab inside the sheet and the palette,

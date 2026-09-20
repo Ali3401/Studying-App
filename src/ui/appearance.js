@@ -1,6 +1,6 @@
 /* Lucid — the Appearance & settings sheet. Everything applies live. */
 
-import { $, $$, el, fmtBytes, fmtDate, downloadText, downloadBlob, mod, pluralize } from '../core/util.js';
+import { $, $$, el, add, fmtBytes, fmtDate, downloadText, downloadBlob, mod, pluralize } from '../core/util.js';
 import * as settings from '../core/settings.js';
 import * as store from '../core/store.js';
 import { sheet, closeSheet, toast, confirmDialog, sliderRow, toggleRow, optionRow, row } from './ui.js';
@@ -66,7 +66,7 @@ function themeTab(root) {
   };
   paint();
 
-  root.append(
+  add(root,
     el('div', { class: 'group' },
       el('h4', { text: 'Theme' }),
       toggleRow('Follow the system', S('autoTheme'), (v) => { set({ autoTheme: v }); rerender(); },
@@ -331,6 +331,7 @@ export function shortcutsSheet() {
       [`${m}\\`, 'Outline sidebar'],
       [`${m}J`, 'Highlights & notes'],
       ['F', 'Focus mode'],
+      ['[ ]', 'Previous / next note in this subject'],
       ['J / K', 'Scroll down / up'],
       ['Space', 'Page down'],
     ]],

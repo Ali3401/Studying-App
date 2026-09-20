@@ -1,6 +1,6 @@
 /* Lucid — reader view: render, highlight, annotate, navigate. */
 
-import { $, $$, el, throttle, debounce, fmtDate, readTime, escapeHtml, copyText, uid, clamp } from '../core/util.js';
+import { $, $$, el, throttle, debounce, fmtDate, readTime, escapeHtml, copyText, uid, clamp, naturalCompare, add } from '../core/util.js';
 import * as store from '../core/store.js';
 import * as settings from '../core/settings.js';
 import { render as renderAst } from '../parse/render.js';
@@ -62,7 +62,7 @@ function renderDoc() {
   const head = $('#paper-head');
   head.innerHTML = '';
   const sub = doc.subject || derived.meta.subject;
-  head.append(
+  add(head,
     sub || doc.emoji
       ? el('div', { class: 'paper-kicker' },
           doc.emoji ? el('span', { text: doc.emoji, style: { fontSize: '1.1em' } }) : null,
@@ -81,7 +81,7 @@ function renderDoc() {
 
   const foot = $('#paper-foot');
   foot.innerHTML = '';
-  foot.append(
+  add(foot,
     el('span', { text: `Added ${fmtDate(doc.createdAt)}` }),
     el('span', { class: 'dotsep' }),
     el('button', { class: 'btn btn-sm btn-ghost', onclick: () => go('editor', { id: doc.id }) },
@@ -101,6 +101,7 @@ function renderDoc() {
   if (doc.accent) document.documentElement.dataset.accent = doc.accent;
   else document.documentElement.dataset.accent = settings.get('accent');
 
+  renderNeighbours();
   repaintHighlights();
   buildOutline();
   renderNotesPanel();
@@ -139,6 +140,53 @@ function buildOutline() {
       },
     }));
   }
+}
+
+/* ---------------- moving between notes ---------------- */
+
+/**
+ * The other notes in this subject, in the order a person would read them —
+ * "Lecture 2" before "Lecture 10". Notes with no subject sit together.
+ */
+function siblings() {
+  const subject = (doc.subject || '').trim();
+  return store.all()
+    .filter(d => (d.subject || '').trim() === subject)
+    .sort((a, b) => naturalCompare(a.title, b.title));
+}
+
+function neighbours() {
+  const list = siblings();
+  const i = list.findIndex(d => d.id === doc.id);
+  if (i < 0) return { prev: null, next: null, position: null, total: list.length };
+  return { prev: list[i - 1] || null, next: list[i + 1] || null, position: i + 1, total: list.length };
+}
+
+function renderNeighbours() {
+  const wrap = $('#paper-next');
+  wrap.innerHTML = '';
+  const { prev, next, position, total } = neighbours();
+  if (!prev && !next) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+
+  const card = (d, dir) => el('button', {
+    class: `next-card next-${dir}`,
+    onclick: () => go('reader', { id: d.id }),
+  },
+    el('span', { class: 'next-dir' },
+      dir === 'prev' ? el('span', { class: 'i', dataset: { icon: 'back' } }) : null,
+      el('span', { text: dir === 'prev' ? 'Previous' : 'Next' }),
+      dir === 'next' ? el('span', { class: 'i', dataset: { icon: 'fwd' } }) : null),
+    el('span', { class: 'next-title' }, d.emoji ? el('span', { text: d.emoji + ' ' }) : null, el('span', { text: d.title })),
+  );
+
+  wrap.append(
+    el('div', { class: 'next-label' },
+      el('span', { text: doc.subject ? `${doc.subject} — ${position} of ${total}` : `${position} of ${total} notes` })),
+    el('div', { class: 'next-row' },
+      prev ? card(prev, 'prev') : el('span'),
+      next ? card(next, 'next') : el('span')),
+  );
 }
 
 /* ---------------- panels ---------------- */
@@ -649,4 +697,10 @@ export const keys = {
   notes: () => { togglePanel('notes'); renderNotesPanel(); },
   scroll(delta) { $('#read-main').scrollBy({ top: delta, behavior: 'smooth' }); },
   hasSelection: () => activeAnchors.length > 0,
+  step(dir) {
+    const { prev, next } = neighbours();
+    const target = dir < 0 ? prev : next;
+    if (!target) { toast(dir < 0 ? 'First note in this subject' : 'Last note in this subject', { icon: 'book', kind: 'warn', ms: 1400 }); return; }
+    go('reader', { id: target.id });
+  },
 };
