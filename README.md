@@ -40,6 +40,11 @@ attached to the passage, or a flashcard made on the spot. Highlights survive
 editing — they re-find their text if it moves. A side panel lists them all,
 filterable by colour, and jumps you back to where each one lives.
 
+**Keeps a library, not a pile.** Subjects and tags that actually filter,
+pinning, archiving, search that reads inside every note, and previous/next
+cards so a set of lectures reads in order — with "Lecture 2" before
+"Lecture 10", the way a person would sort them.
+
 **Imports the ugly stuff.** Drop a PDF, PowerPoint or Word file. Lucid pulls the
 text out, rejoins the lines the PDF broke mid-sentence, repairs hyphenated
 words, throws away page numbers and running headers, normalises the bullets —
@@ -51,11 +56,15 @@ image. Then you edit whatever it got wrong.
 
 **Remembers what you've revised.** Every `::: quiz` question and every card you
 make becomes a scheduled flashcard. Grade it Again / Hard / Good / Easy and it
-comes back when you need it, not before.
+comes back when you need it, not before. Study one note, one subject, or
+everything that is due; the finished screen shows what is waiting, what is
+coming this week, and how many days in a row you have kept it up.
 
 **Built for a keyboard.** `⌘K` for everything, `⌘N` for a new note, `1`–`5` to
-highlight the selection, `N` for a note, `C` for a card, `⌘F` to find, `F` for
-focus mode, `?` for the full list.
+highlight the selection, `N` for a note, `C` for a card, `⌘F` to find, `[` and
+`]` to move between notes, `F` for focus mode, `?` for the full list. Tab stays
+inside whatever dialog is open and comes back to where it started. On a phone,
+swipe in from either edge for the outline and the highlights.
 
 **Works offline.** It is a static site with a service worker. Add it to your
 Home Screen from Safari's Share menu and it opens like an app, on a plane, with
@@ -143,10 +152,15 @@ In this browser, on this device, in IndexedDB — notes, highlights, flashcard
 schedules and images alike. Nothing is uploaded anywhere, and there is no
 account to make.
 
-That also means clearing Safari's website data would take your notes with it,
-so **Appearance → Data → Export everything** writes a single JSON file with
-everything inside it. Keep one in iCloud Drive. Restoring it puts everything
-back, on any device.
+Lucid asks the browser to treat that storage as persistent, which stops it
+being cleared to reclaim space — Safari grants this once the app is on your
+Home Screen, and the Data panel tells you whether it has.
+
+Clearing Safari's website data by hand would still take your notes with it, so
+**Appearance → Data → Export everything** writes a single JSON file with
+everything inside it. Keep one in iCloud Drive; Lucid offers a one-tap export
+if a fortnight goes by without one. Restoring it puts everything back, on any
+device.
 
 ---
 
@@ -174,8 +188,12 @@ drifting onto the wrong words.
 Run the tests with:
 
 ```bash
-node tools/selftest.mjs
+node tools/selftest.mjs     # 107 assertions, no browser needed
 ```
+
+It covers the parser, the renderer, the clean-up engine, note fingerprinting
+and the streak arithmetic. The modules it imports are guarded so they load
+outside a browser — worth keeping that way.
 
 ---
 

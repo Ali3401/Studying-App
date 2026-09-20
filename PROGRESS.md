@@ -138,7 +138,7 @@ workflow cannot enable it.
 
 ---
 
-## Polish list — all ten done
+## Polish list — all ten done ✅
 
 Ordered by how much they actually matter to someone using this to study.
 
@@ -173,3 +173,37 @@ Ordered by how much they actually matter to someone using this to study.
     opening 400 characters of the prose and the overall length, so pasting or
     importing the same material twice offers to open the one you have. A half
     -length excerpt is not treated as a duplicate.
+
+---
+
+## What is left, if you want more
+
+Nothing here is needed for the app to be good. Judgement calls, roughly in
+order of what a person would notice.
+
+1. **Highlight colour meanings.** Let the five colours be named ("definition",
+   "exam", "don't understand") and show the names in the filter row. Cheap,
+   and it turns the colours into a system rather than decoration.
+2. **A note outline that shows highlights.** Dots in the outline where the
+   highlights are, so the sidebar doubles as a revision map.
+3. **Import a whole folder.** Multiple files already import in one go, but
+   without a queue UI — it just makes a note per file and lands you in the
+   library.
+4. **PDF figure extraction.** Whole pages come in as images; pulling out the
+   individual figures would be better, and needs `getOperatorList()`.
+5. **A denser library row.** The list layout hides the excerpt; it could show
+   the outline instead.
+6. **Reduced-motion polish.** `prefers-reduced-motion` is honoured, but the
+   panel slide-ins could cross-fade instead of sliding.
+7. **An `::: audio` or `::: video` block** for embedded lecture clips, stored
+   as blobs like the images.
+
+### Known limits (deliberate, not bugs)
+
+- Scanned PDFs are not OCR'd — the importer detects them and offers page
+  images instead.
+- `$…$` renders as styled monospace, not typeset maths. A real engine would
+  mean shipping KaTeX, which is a large dependency for a small gain here.
+- EMF/WMF images inside Office files are skipped; browsers cannot display
+  them.
+- Multi-file import creates a note per file without a preview step.
