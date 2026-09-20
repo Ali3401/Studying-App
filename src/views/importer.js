@@ -159,9 +159,9 @@ async function runOne(file, { silent = false, auto = true } = {}) {
 
 /* ---------------- preview ---------------- */
 
-function composed() {
+function composed({ ai: useAi = true } = {}) {
   const o = opts();
-  if (job.aiMarkdown) {
+  if (useAi && job.aiMarkdown) {
     const { meta } = splitFrontmatter(job.aiMarkdown);
     return { markdown: job.aiMarkdown, title: meta.title || '', subject: meta.subject || '' };
   }
@@ -246,9 +246,13 @@ async function aiRewrite({ auto = false } = {}) {
   if (!ai.hasKey()) { if (!auto) actions.openAppearance?.('data'); return; }
   if (aiRun) return;
 
-  const source = tab === 'source' && $('#import-source').value.trim()
+  // "Rewrite again" means have another go at the document, not rewrite the
+  // rewrite: feeding an answer back in compounds whatever it got wrong. The
+  // extracted text is the source unless you have edited it by hand.
+  const edited = tab === 'source' && $('#import-source').value.trim();
+  const source = edited && edited !== composed().markdown.trim()
     ? $('#import-source').value
-    : composed().markdown;
+    : composed({ ai: false }).markdown;
 
   aiBefore = job.aiMarkdown || null;
   aiRun = new AbortController();

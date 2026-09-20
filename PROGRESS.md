@@ -263,7 +263,10 @@ do: work out from *meaning* which line was a heading and where a thought ends.
   a request that would fail confusingly.
 - 429 is retried with backoff, since the free tier rate-limits rather than
   failing.
-- Every rewrite is undoable; the extracted text is kept.
+- Every rewrite is undoable; the extracted text is kept — and "Rewrite again"
+  goes back to that extracted text rather than rewriting the rewrite, which
+  would compound whatever the first pass got wrong. Editing the Source tab by
+  hand overrides that and sends what you typed.
 
 ## Reading modes
 
