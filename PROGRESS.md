@@ -99,6 +99,11 @@ workflow cannot enable it.
     `Element.append()` stringifies them, so a note with no subject or no
     quiz rendered the word "null". Use `add()` from `core/util.js` for any
     append with a conditional child.
+13. **Focus never came back from a dialog.** Chrome does not always blur
+    what is inside an element you hide, so the "has focus moved somewhere
+    real?" guard saw focus still inside the closed dialog and skipped the
+    restore. It now treats focus inside the container, on `body`, or
+    nowhere as stranded.
 12. **Nothing looked due until you had already studied.** Cards only exist
     once `syncCards()` has run, so a freshly imported note with ten quiz
     questions reported zero due. `dueCountFor()` counts the questions that
@@ -147,8 +152,9 @@ Ordered by how much they actually matter to someone using this to study.
 6. ~~**Archive UI.**~~ Done — an Archive item in the note menu, an "Archived"
    chip that switches the library into an archive view, and Undo on the
    toast.
-7. **Focus handling in overlays.** Trap Tab inside the sheet and the palette,
-   and return focus to whatever opened them.
+7. ~~**Focus handling in overlays.**~~ Done — `trapFocus()` in `ui/ui.js`
+   keeps Tab inside the sheet, palette, menu and lightbox, and hands focus
+   back to the opener. Menus take arrow keys too.
 8. **Study stats.** Partly done — the finished screen shows due now / this
    week / total, and subject chips carry a due badge. A streak is still open.
 9. **Reader gestures.** Swipe from the left edge to open the outline on

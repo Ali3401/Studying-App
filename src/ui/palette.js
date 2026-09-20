@@ -2,7 +2,7 @@
 
 import { $, $$, el, fuzzy, norm, highlightMatch, mod, debounce } from '../core/util.js';
 import * as store from '../core/store.js';
-import { closeMenu, closeSheet } from './ui.js';
+import { closeMenu, closeSheet, trapFocus } from './ui.js';
 
 let open = false;
 let items = [];
@@ -10,6 +10,7 @@ let active = 0;
 let commands = [];
 let dynamic = () => [];
 let bound = false;
+let releaseFocus = null;
 
 export const isOpen = () => open;
 export function setCommands(list) { commands = list; }
@@ -20,11 +21,13 @@ export function toggle() { open ? close() : show(); }
 export function show(prefill = '') {
   bind();
   closeMenu();
+  const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   open = true;
   $('#palette').hidden = false;
   $('#scrim').hidden = false;
   $('#scrim').onclick = close;
   const input = $('#palette-input');
+  releaseFocus = trapFocus($('#palette'), { restoreTo: opener });
   input.value = prefill;
   input.focus();
   input.select();
@@ -35,6 +38,7 @@ export function close() {
   if (!open) return false;
   open = false;
   $('#palette').hidden = true;
+  releaseFocus?.(); releaseFocus = null;
   if ($('#sheet').hidden) { $('#scrim').hidden = true; $('#scrim').onclick = null; }
   return true;
 }

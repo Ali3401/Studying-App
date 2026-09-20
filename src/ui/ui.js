@@ -23,6 +23,44 @@ export function toast(msg, { icon = 'check', kind = 'ok', ms = 2600, action } = 
   return close;
 }
 
+/* ---------------- focus management ---------------- */
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const visible = (n) => n.offsetWidth || n.offsetHeight || n.getClientRects().length;
+
+/**
+ * Keep Tab inside a dialog while it is open, and hand focus back to whatever
+ * opened it afterwards. Returns a function that undoes both.
+ */
+export function trapFocus(container, { restoreTo } = {}) {
+  const previous = restoreTo || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+
+  const onKey = (e) => {
+    if (e.key !== 'Tab') return;
+    const items = Array.from(container.querySelectorAll(FOCUSABLE)).filter(visible);
+    if (!items.length) { e.preventDefault(); return; }
+    const first = items[0], last = items[items.length - 1];
+    const active = document.activeElement;
+    if (!container.contains(active)) { e.preventDefault(); first.focus(); return; }
+    if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+  };
+
+  container.addEventListener('keydown', onKey);
+  return () => {
+    container.removeEventListener('keydown', onKey);
+    if (!previous || !document.body.contains(previous)) return;
+    // Hiding an element does not always blur what is inside it, so focus may
+    // still be in the dialog — or nowhere. Either way it should come back.
+    // If it has moved somewhere real instead, leave it alone.
+    const active = document.activeElement;
+    const stranded = !active || active === document.body || container.contains(active);
+    if (!stranded) return;
+    try { previous.focus({ preventScroll: true }); } catch { previous.focus(); }
+  };
+}
+
 /* ---------------- scrim ---------------- */
 let scrimUsers = 0;
 function showScrim(onClick) {
@@ -38,6 +76,7 @@ function hideScrim() {
 
 /* ---------------- side sheet ---------------- */
 let sheetClose = null;
+let releaseSheetFocus = null;
 
 export function sheet({ title, body, foot, wide = false, onClose } = {}) {
   closeSheet();
@@ -51,8 +90,9 @@ export function sheet({ title, body, foot, wide = false, onClose } = {}) {
   node.hidden = false;
   showScrim(closeSheet);
   sheetClose = () => { onClose?.(); };
-  const first = b.querySelector('input, textarea, button');
-  if (first && !('ontouchstart' in window)) setTimeout(() => first.focus(), 60);
+  releaseSheetFocus = trapFocus(node);
+  const first = b.querySelector('input, textarea, button') || $('#sheet-title');
+  if (first && !('ontouchstart' in window)) setTimeout(() => first.focus?.(), 60);
   return { node, body: b, foot: f, close: closeSheet };
 }
 
@@ -61,6 +101,7 @@ export function closeSheet() {
   if (node.hidden) return false;
   node.hidden = true;
   hideScrim();
+  releaseSheetFocus?.(); releaseSheetFocus = null;
   sheetClose?.(); sheetClose = null;
   return true;
 }
@@ -69,9 +110,11 @@ export const sheetOpen = () => !$('#sheet').hidden;
 
 /* ---------------- context menu ---------------- */
 let menuCloser = null;
+let releaseMenuFocus = null;
 
 export function menu(items, { x, y, anchor, align = 'end' } = {}) {
   closeMenu();
+  const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const node = $('#menu');
   node.innerHTML = '';
   for (const it of items) {
@@ -112,6 +155,14 @@ export function menu(items, { x, y, anchor, align = 'end' } = {}) {
     window.addEventListener('resize', closeMenu, { once: true });
   }, 0);
   menuCloser = () => document.removeEventListener('pointerdown', off, true);
+  releaseMenuFocus = trapFocus(node, { restoreTo: anchor || opener });
+  node.addEventListener('keydown', (e) => {
+    const items2 = Array.from(node.querySelectorAll('.menu-item'));
+    const i = items2.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); items2[(i + 1) % items2.length]?.focus(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); items2[(i - 1 + items2.length) % items2.length]?.focus(); }
+  });
+  setTimeout(() => node.querySelector('.menu-item')?.focus({ preventScroll: true }), 30);
   return closeMenu;
 }
 
@@ -120,21 +171,28 @@ export function closeMenu() {
   if (node.hidden) return false;
   node.hidden = true;
   menuCloser?.(); menuCloser = null;
+  releaseMenuFocus?.(); releaseMenuFocus = null;
   return true;
 }
 
 /* ---------------- lightbox ---------------- */
+let releaseLightboxFocus = null;
+
 export function lightbox(src, caption = '') {
   const box = $('#lightbox');
   $('#lightbox-img').src = src;
   $('#lightbox-cap').textContent = caption;
+  $('#lightbox-img').alt = caption || 'Picture from this note';
   box.hidden = false;
+  releaseLightboxFocus = trapFocus(box);
+  setTimeout(() => box.querySelector('.lightbox-close')?.focus({ preventScroll: true }), 30);
 }
 export function closeLightbox() {
   const box = $('#lightbox');
   if (box.hidden) return false;
   box.hidden = true;
   $('#lightbox-img').src = '';
+  releaseLightboxFocus?.(); releaseLightboxFocus = null;
   return true;
 }
 
