@@ -290,8 +290,15 @@ Tip: press the ✨ button in the toolbar to copy a prompt that makes Claude writ
           <label class="check"><input type="checkbox" id="opt-bullets" checked /><span>Normalise bullets and numbering</span></label>
           <label class="check"><input type="checkbox" id="opt-furniture" checked /><span>Strip page numbers, headers &amp; footers</span></label>
           <label class="check"><input type="checkbox" id="opt-quotes" checked /><span>Typographic quotes, dashes &amp; ellipses</span></label>
-          <label class="check"><input type="checkbox" id="opt-images" checked /><span>Keep images / slide pictures</span></label>
-          <label class="check"><input type="checkbox" id="opt-snap" /><span>Add a picture of every page (for diagram-heavy PDFs)</span></label>
+          <label class="check"><input type="checkbox" id="opt-images" checked /><span>Keep pictures from slides and documents</span></label>
+          <div class="opt-group">
+            <span class="opt-label">Pictures from PDFs</span>
+            <div class="opt-row" id="opt-pdf-images">
+              <button class="opt-btn" data-pdfimg="none" title="Text only — nothing is rendered as a picture">None</button>
+              <button class="opt-btn is-on" data-pdfimg="figures" title="Only pages that are a diagram with almost no text">Diagrams</button>
+              <button class="opt-btn" data-pdfimg="all" title="Every page as a picture — for scans and hand-drawn notes">Every page</button>
+            </div>
+          </div>
           <label class="check"><input type="checkbox" id="opt-notes" checked /><span>Keep PowerPoint speaker notes</span></label>
           <h4>Structure</h4>
           <label class="check"><input type="checkbox" id="opt-callouts" checked /><span>Turn “Note:”, “Important:”, “Example:” lines into callouts</span></label>

@@ -10,7 +10,8 @@ import { toast, lightbox, confirmDialog, closeSheet } from '../ui/ui.js';
 import { go } from '../core/router.js';
 
 let bound = false;
-let job = null;   // { name, raw, images:[{blob,url}], kind, meta }
+let job = null;       // { name, raw, images:[{blob,url}], kind, meta }
+let lastFile = null;  // kept so changing an option can re-read the same file
 let tab = 'preview';
 
 export const view = {
@@ -50,7 +51,7 @@ const opts = () => ({
   callouts: $('#opt-callouts').checked,
   quiz: $('#opt-quiz').checked,
   images: $('#opt-images').checked,
-  snapshots: $('#opt-snap').checked,
+  pdfImages: $('#opt-pdf-images .opt-btn.is-on')?.dataset.pdfimg || 'figures',
   notes: $('#opt-notes').checked,
 });
 
@@ -80,6 +81,7 @@ async function handleFiles(files) {
 }
 
 async function runOne(file, { silent = false } = {}) {
+  lastFile = file;
   const ext = (file.name.split('.').pop() || '').toLowerCase();
   job = { name: file.name, kind: ext, images: [], meta: {}, raw: '' };
   const o = opts();
@@ -91,12 +93,13 @@ async function runOne(file, { silent = false } = {}) {
       if (!silent) status('Opening PDF…', 0.02);
       const { importPdf } = await import('../import/pdf.js');
       const buf = await readFileBuffer(file);
-      const res = await importPdf(buf, { snapshots: o.snapshots, onProgress });
+      const res = await importPdf(buf, { images: o.pdfImages, onProgress });
       job.raw = res.markdown;
       job.images = res.images.map(i => i.blob);
       job.meta = { title: res.title, pages: res.pageCount, scanned: res.scanned };
-      if (res.scanned && !o.snapshots) {
-        toast('This PDF looks like a scan — tick “Add a picture of every page” to bring it in as images', { kind: 'warn', icon: 'help', ms: 7000 });
+      job.meta.slideLike = res.slideLike;
+      if (res.scanned && o.pdfImages !== 'all') {
+        toast('This PDF looks like a scan — set Pictures from PDFs to “Every page” to bring it in as images', { kind: 'warn', icon: 'help', ms: 7000 });
       }
     } else if (ext === 'pptx') {
       if (!silent) status('Opening presentation…', 0.02);
@@ -305,6 +308,14 @@ function bind() {
 
   $$('#import-opts input[type="checkbox"]').forEach(c =>
     c.addEventListener('change', debounce(() => { if (job) showResult(); }, 120)));
+
+  // the picture choice changes how the file is read, so it needs a re-parse
+  $('#opt-pdf-images').addEventListener('click', (e) => {
+    const b = e.target.closest('.opt-btn');
+    if (!b) return;
+    $$('#opt-pdf-images .opt-btn').forEach(x => x.classList.toggle('is-on', x === b));
+    if (lastFile) runOne(lastFile);
+  });
 
   $('.view-import .doc-bar').addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;

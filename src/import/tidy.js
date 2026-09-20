@@ -323,11 +323,16 @@ export function guessTitle(text, fallback = 'Imported note') {
   return fallback;
 }
 
+/** Words that describe the file, not the subject it is about. */
+const FILENAME_NOISE = /^(lecture|lectures|lec|notes?|note|handout|handouts|slides?|chapter|chap|ch|week|unit|topic|module|part|final|draft|copy|new|old|revised|updated|printable|pdf|doc|docx|pptx|scan|scanned|untitled|document|presentation)\d*$/i;
+
 /** A subject guess from a filename like "PHYS-201 Lecture 4 Cardiac.pdf". */
 export function guessSubject(filename = '') {
   const base = filename.replace(/\.[^.]+$/, '');
-  const m = /^([A-Z]{2,5}[\s-]?\d{2,4})/.exec(base);
-  if (m) return m[1].replace(/[\s-]+/g, ' ').trim();
-  const words = base.split(/[-_\s]+/).filter(w => w.length > 2 && !/^\d+$/.test(w));
-  return words.length ? words[0].replace(/^./, c => c.toUpperCase()) : '';
+  const code = /^([A-Z]{2,5}[\s-]?\d{2,4})\b/.exec(base);
+  if (code) return code[1].replace(/[\s-]+/g, ' ').trim();
+  const words = base.split(/[-_\s]+/)
+    .filter(w => w.length > 2 && !/^\d+$/.test(w) && !FILENAME_NOISE.test(w));
+  // a single leftover word is a guess worth making; a sentence is not
+  return words.length && words.length <= 4 ? words[0].replace(/^./, c => c.toUpperCase()) : '';
 }

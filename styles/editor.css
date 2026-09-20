@@ -94,6 +94,8 @@
 .dropzone .i { color: var(--accent); }
 .dropzone h3 { font-size: var(--fs-ui); font-weight: 650; color: var(--ink); }
 .dropzone p { font-size: var(--fs-sm); color: var(--ink-4); line-height: 1.5; }
+.opt-group { display: flex; flex-direction: column; gap: 6px; padding: var(--gap-2) 0; }
+.opt-label { font-size: var(--fs-sm); color: var(--ink-2); }
 .import-opts h4 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-4); font-weight: 680; margin: var(--gap-3) 0 var(--gap-1); }
 /* min-height:0 or the grid item refuses to shrink below its content and
    the preview grows instead of scrolling */

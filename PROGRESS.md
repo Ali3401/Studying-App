@@ -135,6 +135,25 @@ every push redeploys it.
 16. **`fmtDate` called every future moment "just now"** — it measures elapsed
     time, so a negative difference fell into the first branch. `fmtUntil()`
     handles the other direction.
+17. **Every bullet vanished from Word-exported PDFs.** Word and PowerPoint
+    draw bullets with the Symbol font, whose glyphs pdf.js returns in the
+    Private Use Area (U+F0B7 is Symbol's bullet). They are not whitespace, so
+    they survived trimming and silently became the first character of the
+    line, taking the line's left edge with them. Stripped now, and treated as
+    the bullet they were.
+18. **Bold was never detected in any PDF.** The test was
+    `/bold/i.test(item.fontName)`, but `fontName` is an internal id like
+    `g_d0_f1`. The real font needs `page.commonObjs.get(name)`, which is only
+    populated once `getOperatorList()` has run — 206ms for a 25-page deck, so
+    it now always does. Bold-at-body-size is the main heading signal in a
+    typed handout.
+19. **Heading levels came from absolute size ratios**, so a handout that
+    separates headings by two points made everything an h4. Ranked by size
+    around the *heaviest* heading size instead.
+20. **`imgDraws` is not a "has a diagram" signal.** PowerPoint renders
+    gradients, shadows and its own bullets as images, so an ordinary text
+    slide drew 69 of them while a real graph drew 2. Judging a page by the
+    shape of its text works; counting its pictures does not.
 14. **The paste handler could throw.** It called `e.target.closest(...)`,
     and a paste whose target is not an element (`window`, `document`) has no
     such method. Guarded.
