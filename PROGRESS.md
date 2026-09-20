@@ -114,3 +114,28 @@ workflow cannot enable it.
 2. Serve the folder and click through: library → reader → select text →
    highlight → edit → study → import.
 3. Keep this file current, and commit after each meaningful step.
+
+---
+
+## Polish list (work top-down, commit each one)
+
+Ordered by how much they actually matter to someone using this to study.
+
+1. **Ask for persistent storage.** `navigator.storage.persist()`. Without it
+   Safari can evict IndexedDB after a few weeks of not opening the site, and
+   the notes are simply gone. Highest-value item here. — **done**
+2. **Backup nudge.** Track the last export date; if it is more than ~14 days
+   old and there are notes worth losing, offer a one-tap export. — **done**
+3. **Tag filtering.** Tags render on cards but do nothing. Make them
+   clickable, and add them to the subject chip row. — **done**
+4. **Next / previous note in the reader.** Reaching the end of a note should
+   offer the next one in the same subject. — **done**
+5. **Study a single subject**, not just one note or everything. — **done**
+6. **Archive UI.** The `archived` flag exists with no way to set it. — **done**
+7. **Focus handling in overlays.** Trap Tab inside the sheet and the palette,
+   and return focus to whatever opened them. — **done**
+8. **Study stats.** Cards due today, a streak, what is coming this week. — **done**
+9. **Reader gestures.** Swipe from the left edge to open the outline on
+   iPad. — **done**
+10. **Duplicate detection.** Warn before creating a second copy of a note that
+    was pasted twice. — **done**
