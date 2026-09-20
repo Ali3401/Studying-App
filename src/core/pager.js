@@ -19,12 +19,13 @@ export function createPager({ viewport, sheet, onChange }) {
   let count = 1;
   let step = 0;          // distance between one page (or spread) and the next
   let cols = 1;          // leaves visible at once: 1 for a page, 2 for a spread
+  let leaves = 1;        // columns that actually hold text, across the whole flow
   let padL = 0;          // the sheet's left padding, so offsets stay in the flow
 
   const isPaged = () => mode !== 'scroll';
 
   function measure() {
-    if (!isPaged()) { count = 1; index = 0; step = 0; cols = 1; return; }
+    if (!isPaged()) { count = 1; index = 0; step = 0; cols = 1; leaves = 1; return; }
 
     const cs = getComputedStyle(sheet);
     padL = parseFloat(cs.paddingLeft) || 0;
@@ -54,6 +55,10 @@ export function createPager({ viewport, sheet, onChange }) {
     sheet.style.setProperty('--page-x', wasX || '0px');
 
     count = Math.max(1, Math.floor(reach / step + 0.02) + 1);
+    // A spread always renders both its columns, but the last one can be empty.
+    // The probe sits at the end of the flow, so the column it landed in is the
+    // last leaf that has anything on it.
+    leaves = Math.max(1, Math.floor(reach / (step / cols) + 0.02) + 1);
     index = clamp(index, 0, count - 1);
     apply();
     requestAnimationFrame(() => sheet.classList.remove('no-turn'));
@@ -115,6 +120,7 @@ export function createPager({ viewport, sheet, onChange }) {
     get count() { return count; },
     get mode() { return mode; },
     get cols() { return cols; },
+    get leaves() { return leaves; },
     get paged() { return isPaged(); },
   };
 }

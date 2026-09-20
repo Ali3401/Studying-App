@@ -102,6 +102,7 @@ export const DEFAULTS = {
   flow: 'scroll',        // scroll | paged | book
   callouts: 'panel',     // panel | quiet
   dropcap: 'off',        // on | off — the big opening letter, paged reading
+  aiAuto: true,          // restructure an import as soon as it is read
   libLayout: 'grid',
   libSort: 'updated',
   showOutline: true,

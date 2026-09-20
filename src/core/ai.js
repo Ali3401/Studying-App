@@ -54,6 +54,15 @@ export function inspectKey(key = getKey()) {
 
 /* ---------------- talking to the model ---------------- */
 
+/**
+ * This is a formatting job, not a reasoning one, so the 2.5 models are asked
+ * not to think: it is faster, it costs a fraction of the quota, and — because
+ * thinking tokens come out of the same output budget — it stops long answers
+ * being cut off half way. Older models do not know the field, so it is only
+ * sent where it is understood, and dropped if it is refused anyway.
+ */
+const thinksOnDemand = (model) => /^gemini-2\.5-(flash|flash-lite)/i.test(model);
+
 async function call(model, body, { signal } = {}) {
   const key = getKey();
   if (!key) throw new AiError('no-key', 'No API key saved yet.');
@@ -85,9 +94,28 @@ async function call(model, body, { signal } = {}) {
   const data = await res.json();
   const blocked = data?.promptFeedback?.blockReason;
   if (blocked) throw new AiError('blocked', `The model declined to process that text (${blocked}).`);
-  const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+  const cand = data?.candidates?.[0];
+  const text = cand?.content?.parts?.map(p => p.text || '').join('') || '';
   if (!text.trim()) throw new AiError('empty', 'The model returned nothing.');
-  return text;
+  return { text, finish: cand?.finishReason || '' };
+}
+
+/** One generation, with thinking off where the model supports switching it off. */
+async function generate(model, prompt, { signal, maxOutputTokens = 8192, temperature = 0.2 } = {}) {
+  const generationConfig = { temperature, topP: 0.9, maxOutputTokens };
+  const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig };
+  if (thinksOnDemand(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+
+  try {
+    return await call(model, body, { signal });
+  } catch (e) {
+    // a model that does not know the field says so; ask again without it
+    if (e instanceof AiError && e.kind === 'request' && /thinking/i.test(e.message) && generationConfig.thinkingConfig) {
+      delete generationConfig.thinkingConfig;
+      return call(model, body, { signal });
+    }
+    throw e;
+  }
 }
 
 export class AiError extends Error {
@@ -157,20 +185,88 @@ Rules, in order of importance:
 7. Keep every ![caption](IMG:0) image reference exactly where it is, unchanged.
 8. Output only the note. No preamble, no explanation, no code fence around it.`;
 
-const FIRST_EXTRA = `
-Begin with front matter:
-
----
+const FRONT_MATTER_SHAPE = `---
 title: <the document's real title>
 subject: <the academic subject, if it is obvious; otherwise omit this line>
 tags: <2-4 comma separated keywords>
 emoji: <one emoji that suits the topic>
----
+---`;
+
+const FIRST_EXTRA = `
+Begin with front matter:
+
+${FRONT_MATTER_SHAPE}
 `;
 
 const LATER_EXTRA = `
 Do NOT write front matter — this is a later part of a longer document that has
 already been started. Continue straight into the content.`;
+
+/* ---------------- reading the whole thing first ----------------
+
+   A long handout has to be sent in pieces, and a piece on its own has no
+   idea what came before it: it re-titles the document half way through, or
+   starts a section that was already open. So before any of it is rewritten,
+   one cheap pass reads a skeleton of the entire document and comes back with
+   what it is and how it is laid out. That answer then rides along with every
+   piece, which is what lets them agree with each other. */
+
+const SURVEY = `Below is a skeleton of a document extracted from a badly
+formatted PDF: the lines are in order, but long lines are cut short and some
+lines are missing. Work out what the document actually is.
+
+Reply with exactly this and nothing else:
+
+${FRONT_MATTER_SHAPE}
+
+OUTLINE
+- <each real section of the document, in order, titled the way it should be>
+
+Rules:
+- Never invent a section that is not in the text.
+- Name sections the way the document names them, tidied up.
+- Between 3 and 20 sections. If it has no sections at all, write "- (none)".`;
+
+/**
+ * A cheap stand-in for the whole document: every line in order, long ones
+ * clipped, thinned evenly if it is still too big. Headings and labels are
+ * short lines, so they nearly all survive — which is exactly the shape the
+ * survey needs to see.
+ */
+export function skeleton(text, budget = 6000) {
+  const lines = String(text).split('\n').map(l => l.trim()).filter(Boolean)
+    .map(l => (l.length <= 90 ? l : l.slice(0, 88) + '…'));
+  const joined = lines.join('\n');
+  if (joined.length <= budget) return joined;
+
+  // the opening pages carry the title, so they are never thinned
+  const head = lines.slice(0, 30);
+  const rest = lines.slice(30);
+  const stride = Math.max(2, Math.ceil(joined.length / budget));
+  const thinned = rest.filter((_, i) => i % stride === 0);
+  return [...head, ...thinned].join('\n').slice(0, budget);
+}
+
+/** Pull the front matter block and the outline out of a survey answer. */
+export function readSurvey(answer) {
+  const text = stripFence(String(answer || ''));
+  const fm = text.match(/^---\n([\s\S]*?)\n---/);
+  const frontMatter = fm ? `---\n${fm[1].trim()}\n---` : '';
+  const after = text.slice(fm ? fm[0].length : 0);
+  const outline = (after.match(/^[ \t]*[-*]\s+(.+)$/gm) || [])
+    .map(l => l.replace(/^[ \t]*[-*]\s+/, '').trim())
+    .filter(l => l && !/^\(none\)$/i.test(l));
+  return { frontMatter, outline };
+}
+
+export async function survey(text, opts = {}) {
+  const model = opts.model || getModel();
+  const prompt = `${SURVEY}\n\n---- SKELETON ----\n\n${skeleton(text, opts.budget || 6000)}`;
+  const { text: answer } = await withRetry(
+    () => generate(model, prompt, { signal: opts.signal, maxOutputTokens: 1500, temperature: 0.1 }),
+    opts.signal);
+  return readSurvey(answer);
+}
 
 /** Split on blank lines, packing into chunks a model can answer in one go. */
 export function chunk(text, size = 7000) {
@@ -194,6 +290,34 @@ export function chunk(text, size = 7000) {
 const stripFence = (s) =>
   s.replace(/^\s*```(?:markdown|md)?\s*\n/i, '').replace(/\n```\s*$/, '').trim();
 
+/** The ## and ### headings a rewritten piece produced, in order. */
+export function headingsIn(markdown) {
+  return (String(markdown).match(/^#{2,3}\s+(.+)$/gm) || [])
+    .map(h => h.replace(/^#{2,3}\s+/, '').trim())
+    .filter(Boolean);
+}
+
+/** What a later piece needs to know about the pieces before it. */
+function contextFor({ plan, written, part, total }) {
+  const lines = [];
+  if (plan?.outline?.length) {
+    lines.push('---- WHAT THIS DOCUMENT IS ----', '',
+      'A first pass read the whole document and found these sections, in order:',
+      ...plan.outline.map(h => `- ${h}`), '',
+      'Use these titles where this part of the text reaches them. Do not start a',
+      'section that belongs later, and do not repeat one that is already written.');
+  }
+  if (total > 1) {
+    lines.push('', `This is part ${part} of ${total}.`);
+    if (written.length) {
+      lines.push('Sections already written: ' + written.slice(-8).map(h => `“${h}”`).join(', ') + '.',
+        'If this text continues the last of those, carry straight on without',
+        'repeating its heading.');
+    }
+  }
+  return lines.length ? lines.join('\n') + '\n\n' : '';
+}
+
 /**
  * @param {string} text        the extracted document
  * @param {object} opts
@@ -201,26 +325,69 @@ const stripFence = (s) =>
  */
 export async function restructure(text, opts = {}) {
   const model = opts.model || getModel();
-  const parts = chunk(text, opts.chunkSize || 7000);
+  const size = opts.chunkSize || 7000;
+  const parts = chunk(text, size);
   const out = [];
+  const written = [];
+
+  // One extra call buys every later piece a view of the whole document. It is
+  // only worth it when there is more than one piece to keep in step.
+  let plan = null;
+  const steps = parts.length + (parts.length > 1 ? 1 : 0);
+  let done = 0;
+
+  if (parts.length > 1) {
+    opts.onProgress?.(0, steps, 'Reading the whole document…');
+    try {
+      plan = await survey(text, { model, signal: opts.signal });
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      plan = null;               // a failed survey is not worth failing over
+    }
+    done = 1;
+  }
+
+  if (plan?.frontMatter) out.push(plan.frontMatter);
 
   for (let i = 0; i < parts.length; i++) {
-    opts.onProgress?.(i, parts.length, parts.length > 1
+    opts.onProgress?.(done + i, steps, parts.length > 1
       ? `Rewriting part ${i + 1} of ${parts.length}…`
       : 'Reading the whole document…');
 
-    const prompt = `${SPEC}${i === 0 ? FIRST_EXTRA : LATER_EXTRA}\n\n---- TEXT ----\n\n${parts[i]}`;
+    // front matter comes from the survey when there was one
+    const extra = plan?.frontMatter ? LATER_EXTRA : (i === 0 ? FIRST_EXTRA : LATER_EXTRA);
+    const context = contextFor({ plan, written, part: i + 1, total: parts.length });
+    const piece = await rewritePiece(model, parts[i], `${SPEC}${extra}\n\n${context}`, opts, size);
 
-    const answer = await withRetry(() => call(model, {
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, topP: 0.9, maxOutputTokens: 8192 },
-    }, { signal: opts.signal }), opts.signal);
-
-    out.push(stripFence(answer));
+    out.push(piece);
+    written.push(...headingsIn(piece));
   }
 
-  opts.onProgress?.(parts.length, parts.length, 'Done');
+  opts.onProgress?.(steps, steps, 'Done');
   return out.join('\n\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+}
+
+/**
+ * One piece, rewritten. If the answer ran out of room the piece was too big
+ * to say in one go, so it is split and each half asked for separately rather
+ * than handing back a note that stops mid-sentence.
+ */
+async function rewritePiece(model, source, preamble, opts, size, depth = 0) {
+  const prompt = `${preamble}---- TEXT ----\n\n${source}`;
+  const { text: answer, finish } = await withRetry(
+    () => generate(model, prompt, { signal: opts.signal }), opts.signal);
+
+  if (finish === 'MAX_TOKENS' && depth < 2 && source.length > 1200) {
+    const halves = chunk(source, Math.ceil(source.length / 2));
+    if (halves.length > 1) {
+      const parts = [];
+      for (const half of halves) {
+        parts.push(await rewritePiece(model, half, `${SPEC}${LATER_EXTRA}\n\n`, opts, size, depth + 1));
+      }
+      return parts.join('\n\n');
+    }
+  }
+  return stripFence(answer);
 }
 
 /** The free tier rate-limits rather than failing, so wait and try again. */

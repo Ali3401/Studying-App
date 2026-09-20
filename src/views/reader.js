@@ -511,16 +511,19 @@ const updateProgress = throttle(() => {
    would be a page number for the wrong page.  A printed book leaves the
    opening page bare, so the running head only appears from page two on. */
 
+/** Write only when it changes: this runs on every scroll frame. */
+function setText(id, value) {
+  const node = $(id);
+  if (node && node.textContent !== value) node.textContent = value;
+}
+
 function paintBookChrome() {
   const frame = $('#page-frame');
   if (!frame) return;
 
   if (!pager?.paged) {
     frame.classList.remove('has-head');
-    $('#head-l').textContent = '';
-    $('#head-r').textContent = '';
-    $('#folio-l').textContent = '';
-    $('#folio-r').textContent = '';
+    for (const id of ['#head-l', '#head-r', '#folio-l', '#folio-r']) setText(id, '');
     return;
   }
 
@@ -528,21 +531,21 @@ function paintBookChrome() {
   // carries the book, centred.
   const title = (doc?.title || '').trim();
   const section = pager.cols > 1 ? sectionOnPage() : '';
-  $('#head-l').textContent = title;
-  $('#head-r').textContent = section === title ? '' : section;
+  setText('#head-l', title);
+  setText('#head-r', section === title ? '' : section);
   frame.classList.toggle('has-head', !!(title || section) && pager.index > 0);
 
   // In a spread each turn shows two leaves, so the folio counts leaves, not
-  // turns — and the last turn of an odd book has nothing on its right page.
+  // turns — and a book with an odd number of them ends on a blank recto,
+  // which a printed book leaves unnumbered.
   const cols = pager.cols;
   const first = pager.index * cols + 1;
-  const total = pager.count * cols;
   if (cols > 1) {
-    $('#folio-l').textContent = String(first);
-    $('#folio-r').textContent = first + 1 <= total ? String(first + 1) : '';
+    setText('#folio-l', String(first));
+    setText('#folio-r', first + 1 <= pager.leaves ? String(first + 1) : '');
   } else {
-    $('#folio-l').textContent = pager.count > 1 ? String(first) : '';
-    $('#folio-r').textContent = '';
+    setText('#folio-l', pager.count > 1 ? String(first) : '');
+    setText('#folio-r', '');
   }
 }
 

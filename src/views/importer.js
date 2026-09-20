@@ -57,7 +57,7 @@ const opts = () => ({
   callouts: $('#opt-callouts').checked,
   quiz: $('#opt-quiz').checked,
   images: $('#opt-images').checked,
-  pdfImages: $('#opt-pdf-images .opt-btn.is-on')?.dataset.pdfimg || 'figures',
+  pdfImages: $('#opt-pdf-images .opt-btn.is-on')?.dataset.pdfimg || 'none',
   notes: $('#opt-notes').checked,
 });
 
@@ -86,7 +86,10 @@ async function handleFiles(files) {
   go('library');
 }
 
-async function runOne(file, { silent = false } = {}) {
+/** The formats where the extracted text is worth a model's attention. */
+const WORTH_REWRITING = new Set(['pdf', 'pptx', 'docx']);
+
+async function runOne(file, { silent = false, auto = true } = {}) {
   lastFile = file;
   aiBefore = null;
   const ext = (file.name.split('.').pop() || '').toLowerCase();
@@ -146,6 +149,12 @@ async function runOne(file, { silent = false } = {}) {
   job.urls = job.images.map(b => URL.createObjectURL(b));
   job.fileSize = file.size;
   if (!silent) { status(`Read ${fmtBytes(file.size)}`, 1); setTimeout(() => { $('#import-status').hidden = true; }, 900); showResult(); }
+
+  // Getting a badly set handout into shape is the whole point, so when there
+  // is a key to do it with, do it — rather than leaving a button to find.
+  if (!silent && auto && settings.get('aiAuto') && ai.hasKey() && WORTH_REWRITING.has(ext)) {
+    aiRewrite({ auto: true });
+  }
 }
 
 /* ---------------- preview ---------------- */
@@ -224,15 +233,18 @@ function refreshAi() {
   $('#ai-setup').hidden = ready;
   $('#ai-rewrite').hidden = !ready;
   $('#ai-undo').hidden = !job?.aiMarkdown;
+  $('#ai-auto-row').hidden = !ready;
+  $('#opt-ai-auto').checked = settings.get('aiAuto') !== false;
   $('#ai-rewrite-label').textContent = job?.aiMarkdown ? 'Rewrite again' : 'Rewrite with AI';
   $('#ai-blurb').textContent = ready
-    ? 'A model reads the extracted text and works out what was a heading, a list, a definition — the things position alone cannot tell you. Only text is sent, never pictures.'
+    ? 'Gemini skims the whole document first to work out what it is and how it is laid out, then rewrites it a piece at a time with that plan in hand — so headings, lists and definitions come out consistent from end to end. Only text is sent, never pictures.'
     : 'Lucid can have Gemini restructure the extracted text for you. It needs your own free key, kept on this device.';
 }
 
-async function aiRewrite() {
+async function aiRewrite({ auto = false } = {}) {
   if (!job) return;
-  if (!ai.hasKey()) { actions.openAppearance?.('data'); return; }
+  if (!ai.hasKey()) { if (!auto) actions.openAppearance?.('data'); return; }
+  if (aiRun) return;
 
   const source = tab === 'source' && $('#import-source').value.trim()
     ? $('#import-source').value
@@ -255,7 +267,7 @@ async function aiRewrite() {
     });
     job.aiMarkdown = markdown;
     showResult();
-    toast('Rewritten', { icon: 'sparkle' });
+    toast(auto ? 'Tidied up with Gemini' : 'Rewritten', { icon: 'sparkle' });
   } catch (e) {
     if (e.name === 'AbortError') return;
     console.error(e);
@@ -382,12 +394,14 @@ function bind() {
   $$('#import-opts input[type="checkbox"]').forEach(c =>
     c.addEventListener('change', debounce(() => { if (job) showResult(); }, 120)));
 
+  $('#opt-ai-auto').addEventListener('change', (e) => settings.set({ aiAuto: e.target.checked }));
+
   // the picture choice changes how the file is read, so it needs a re-parse
   $('#opt-pdf-images').addEventListener('click', (e) => {
     const b = e.target.closest('.opt-btn');
     if (!b) return;
     $$('#opt-pdf-images .opt-btn').forEach(x => x.classList.toggle('is-on', x === b));
-    if (lastFile) runOne(lastFile);
+    if (lastFile) runOne(lastFile, { auto: false });
   });
 
   $('.view-import .doc-bar').addEventListener('click', (e) => {

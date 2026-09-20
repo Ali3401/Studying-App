@@ -456,7 +456,7 @@ function aiSection() {
   input.addEventListener('change', () => { ai.setKey(input.value); });
 
   add(wrap,
-    el('p', { class: 'hint', text: 'A PDF tells us the words but not which line was a heading, where a thought ends, or what was a list. A model reading the text can work that out. Only text is ever sent — never page images, which keeps it well inside the free tier.' }),
+    el('p', { class: 'hint', text: 'A PDF tells us the words but not which line was a heading, where a thought ends, or what was a list. Gemini skims the whole document first to work out what it is, then rewrites it with that plan in hand, so a long handout comes out consistent from end to end. With a key saved it runs by itself on every import. Only text is ever sent — never page images, which keeps it well inside the free tier.' }),
     el('div', { style: { display: 'flex', gap: 'var(--gap-2)' } }, input, reveal),
     el('div', { style: { display: 'flex', gap: 'var(--gap-2)' } },
       el('button', { class: 'btn btn-outline', style: { flex: '1' }, onclick: check },

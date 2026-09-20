@@ -174,6 +174,30 @@ or without `configure-pages`' `enablement: true`.
     questions reported zero due. `dueCountFor()` counts the questions that
     have no card yet, and every counter goes through it.
 
+21. **A patch script truncated a stylesheet to nothing.** `open(p, 'w')` opens
+    and empties the file *before* `write()` runs, so a `TypeError` in the
+    expression being written leaves a zero-byte file and no error about the
+    file itself. Patch scripts now build the whole string, assert every anchor
+    matched, write to `path.tmp` and `os.replace()` it into place.
+22. **`pageOf()` lied during a turn.** It measured an element against the
+    window and added `index * step`, which assumes the sheet's translate has
+    already settled. Mid-turn it has not, so the outline highlight and the
+    running head could name the wrong page. It now measures the element
+    against the sheet — both move together, so the difference is stable.
+23. **The gutter and the page edges cannot be painted on the sheet.** The
+    sheet is what translates, so a spine drawn on it slides away with the
+    text. Everything that belongs to the *book* rather than to the *text* —
+    paper, corners, shadow, cut edges, spine, running head, folio — lives on
+    `.page-frame`, which never moves.
+24. **Black shadows disappear on dark stock.** The page edges and the turn
+    shadow were `rgb(0 0 0 / …)`, invisible on a dark theme's paper. They are
+    now `color-mix(in srgb, var(--ink) …%, transparent)`, which darkens white
+    paper and lightens dark paper — either way the eye sees an edge.
+25. **Easing a travelling band makes it invisible.** The turn shadow was
+    sharing the sheet's ease-out, so it crossed 85% of the page in the first
+    third of the animation and looked like a flicker. The sheet keeps its
+    easing; the band crosses linearly.
+
 ---
 
 ## Things deliberately not done
@@ -207,9 +231,32 @@ do: work out from *meaning* which line was a heading and where a thought ends.
   minutes.
 - **Only text is uploaded**, never page images — cheaper, faster, and well
   inside the free tier. PDF pictures now default to None for the same reason.
+- **A long document is read whole before any of it is rewritten.** A piece on
+  its own has no idea what came before it, so it re-titles the document half
+  way through or reopens a section that is already written. One cheap survey
+  call sends a *skeleton* of the entire document — every line in order, long
+  lines clipped, thinned evenly if it is still too big, so headings survive —
+  and gets back the front matter and an outline of the real sections. That
+  plan then rides along with every piece, together with the headings already
+  written, which is what keeps them agreeing with each other. The survey only
+  runs when there is more than one piece to keep in step.
 - Long documents are split into ~7000-character chunks at blank lines (the
-  splitter is tested for losslessness); the first chunk asks for front matter,
-  later ones are told not to repeat it.
+  splitter is tested for losslessness).
+- **Thinking is switched off** on the 2.5 models (`thinkingBudget: 0`). This is
+  a formatting job, not a reasoning one; it is faster, it costs a fraction of
+  the quota, and — because thinking tokens come out of the same output budget —
+  it stops long answers being cut off half way. Models that do not know the
+  field say so, and the call is retried without it.
+- If an answer still comes back `MAX_TOKENS`, that piece was too big to say in
+  one go: it is split in half and each half asked for separately, rather than
+  handing back a note that stops mid-sentence.
+- **It runs itself.** Getting a badly set handout into shape is the whole point
+  of the app, so when a key is saved the rewrite starts as soon as a PDF,
+  PowerPoint or Word file has been read. The checkbox under Understanding
+  turns that off; changing the picture mode re-parses without spending another
+  round of quota. Dropping *several* files at once still does not — that
+  is a straight-to-library batch, and ten lectures would be thirty calls and
+  several minutes without anyone having asked for them.
 - The prompt forbids inventing, summarising or decorating — restructure only.
 - `inspectKey()` catches the common mistake of pasting an OAuth token or an
   `AQ.…` token instead of an `AIza…` AI Studio key, and says so before making
@@ -240,6 +287,38 @@ Two things about it are easy to get wrong:
 - **The clipping has to happen on a frame, not on the scroller.** A page
   narrower than the viewport would otherwise show its neighbouring columns in
   the margins either side.
+
+### Looking like a book, not like columns
+
+The frame that does the clipping is also the physical sheet, and that split is
+the whole trick: **the sheet translates, the frame does not**, so everything
+that belongs to the book rather than to the text is painted on the frame.
+
+- `.read-main` is the desk — the app background, with room around the block.
+- `.page-frame` is the paper: background, rounded corners, drop shadow, and a
+  `::after` that draws the cut edge of the block as fine ruled lines at the
+  outer margin with the gutter shading where the paper turns into the binding.
+- In `book`, `.page-frame::before` is the spine: a soft gutter shadow down the
+  fold, symmetric, darkest at the centre.
+- `.running-head` and `.folio` are absolutely positioned on the frame. One page
+  centres the note's title under a hairline rule; a spread puts the note on the
+  verso and the current section on the recto, the way a bound book does, and
+  drops the rule because it would run through the spine. Page one stays bare.
+  A spread's folio counts leaves, not turns: `index * cols + 1` and `+ 2`.
+- `.page-turn-fx` sweeps a band of shadow across the block in the direction of
+  travel. `pager.apply()` reports the direction; `reader.js` restarts the
+  animation by removing the class, reading `offsetWidth`, and adding it back.
+- `[data-dropcap="on"]` sets the note's first letter large. Off by default, on
+  in the Book and Manuscript presets, with its own toggle in Appearance → Type.
+- `#page-count` survives as a visually hidden `aria-live` region, so a turn is
+  still announced; the folio does the seeing.
+- The toolbar gives up its panel, its blur and its rule in these two flows, and
+  the one saturated button loses its fill. A page lying on a desk with a solid
+  toolbar over it reads as two surfaces; this way there is only the desk and
+  the page.
+- The turn is `calc(var(--t-mid) * 1.6)` on `cubic-bezier(.26,.86,.28,1)` —
+  quick off the mark, long settle, the way a leaf falls. `[data-motion="off"]`
+  collapses it through `--speed`, and `playTurn()` skips the shadow entirely.
 
 ## Reading styles
 

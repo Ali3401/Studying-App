@@ -547,18 +547,29 @@
   opacity: 0;
   border-radius: inherit;
 }
+/* The shadow a lifting leaf throws across the page under it. Mixed from the
+   ink, so it darkens white stock and lightens dark stock — either way, the
+   eye sees something pass over the page. */
 .page-turn-fx::before {
   content: "";
   position: absolute;
   top: 0; bottom: 0; left: -40%;
   width: 40%;
   background: linear-gradient(90deg,
-    transparent, rgb(0 0 0 / .055) 35%, rgb(0 0 0 / .12) 50%, rgb(0 0 0 / .055) 65%, transparent);
+    transparent 0%,
+    color-mix(in srgb, var(--ink) 4%, transparent) 26%,
+    color-mix(in srgb, var(--ink) 11%, transparent) 42%,
+    color-mix(in srgb, var(--ink) 16%, transparent) 50%,
+    color-mix(in srgb, var(--ink) 11%, transparent) 58%,
+    color-mix(in srgb, var(--ink) 4%, transparent) 74%,
+    transparent 100%);
 }
 .page-frame.turning-next .page-turn-fx,
-.page-frame.turning-prev .page-turn-fx { animation: leafFade var(--t-mid) var(--ease); }
-.page-frame.turning-next .page-turn-fx::before { animation: leafNext var(--t-mid) var(--ease); }
-.page-frame.turning-prev .page-turn-fx::before { animation: leafPrev var(--t-mid) var(--ease); }
+.page-frame.turning-prev .page-turn-fx { animation: leafFade calc(var(--t-mid) * 1.6) linear; }
+/* the band crosses at a steady pace; easing it would put it off the far edge
+   before the eye has seen it move */
+.page-frame.turning-next .page-turn-fx::before { animation: leafNext calc(var(--t-mid) * 1.6) linear; }
+.page-frame.turning-prev .page-turn-fx::before { animation: leafPrev calc(var(--t-mid) * 1.6) linear; }
 
 @keyframes leafFade { 0% { opacity: 0; } 18% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes leafNext { from { transform: translateX(0); }      to { transform: translateX(350%); } }
@@ -592,7 +603,8 @@
   column-gap: var(--gap-7);
   column-fill: auto;
   transform: translateX(var(--page-x, 0px));
-  transition: transform var(--t-mid) var(--ease);
+  /* quick off the mark, then a long settle — a leaf falling, not a slider */
+  transition: transform calc(var(--t-mid) * 1.6) cubic-bezier(.26, .86, .28, 1);
   will-change: transform;
 }
 [data-flow="paged"] .paper.no-turn,
@@ -605,6 +617,26 @@
 [data-flow="book"]  .paper { column-count: 2; }
 
 [data-flow="book"] .read-shell, [data-flow="paged"] .read-shell { position: relative; }
+
+/* With a page lying on a desk, a toolbar with its own panel and rule on top
+   reads as a second surface. It becomes part of the desk instead, and the
+   one saturated button loses its fill, so nothing competes with the page. */
+[data-flow="paged"] .view-reader .doc-bar,
+[data-flow="book"] .view-reader .doc-bar {
+  border-bottom-color: transparent;
+  background: transparent;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+[data-flow="paged"] .view-reader .doc-bar-r .btn-primary,
+[data-flow="book"] .view-reader .doc-bar-r .btn-primary {
+  background: transparent;
+  color: var(--accent);
+  box-shadow: inset 0 0 0 var(--border-w) color-mix(in srgb, var(--accent) 45%, transparent);
+}
+[data-flow="paged"] .view-reader .doc-bar-r .btn-primary:hover,
+[data-flow="book"] .view-reader .doc-bar-r .btn-primary:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
 
 /* nothing may be orphaned across a page break */
 [data-flow="paged"] .prose h1, [data-flow="paged"] .prose h2,

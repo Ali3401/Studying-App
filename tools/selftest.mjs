@@ -8,6 +8,7 @@ import { SAMPLE, WELCOME } from '../src/core/sample.js';
 import { fmtUntil, naturalCompare, countWords, fuzzy, slug } from '../src/core/util.js';
 import { fingerprint } from '../src/core/store.js';
 import { streak } from '../src/views/study.js';
+import { chunk, skeleton, readSurvey, headingsIn, inspectKey } from '../src/core/ai.js';
 
 let pass = 0, fail = 0;
 const ok = (name, cond, extra = '') => {
@@ -222,6 +223,49 @@ group('streak');
   ok('a gap earlier is ignored', streak([iso(30), iso(2), iso(1), iso(0)], today).days === 3);
   ok('unsorted history is fine', streak([iso(1), iso(0), iso(2)], today).days === 3);
   ok('crossing a month boundary', streak(['2026-06-01', '2026-05-31', '2026-05-30'], '2026-06-01').days === 3);
+}
+
+group('ai clean-up');
+{
+  const doc = Array.from({ length: 40 }, (_, i) => `Paragraph ${i} ${'word '.repeat(40)}`).join('\n\n');
+
+  // chunking must not lose a single character of the source
+  const parts = chunk(doc, 900);
+  ok('splits a long document', parts.length > 1);
+  ok('every piece fits the budget', parts.every(p => p.length <= 900 || !p.includes('\n\n')));
+  ok('chunking is lossless', parts.join('\n\n').replace(/\s+/g, ' ') === doc.replace(/\s+/g, ' '));
+  ok('a short document stays whole', chunk('one\n\ntwo', 900).length === 1);
+  ok('an oversized block is still split', chunk('x'.repeat(2500), 900).length === 3);
+
+  // the skeleton stands in for the whole document, cheaply
+  const long = Array.from({ length: 400 }, (_, i) => `Line ${i} ${'y'.repeat(200)}`).join('\n');
+  const sk = skeleton(long, 3000);
+  ok('skeleton respects the budget', sk.length <= 3000);
+  ok('skeleton clips long lines', sk.split('\n').every(l => l.length <= 91));
+  ok('skeleton keeps the opening', sk.startsWith('Line 0'));
+  ok('skeleton keeps order', sk.indexOf('Line 0') < sk.indexOf('Line 3'));
+  ok('a small document is left alone', skeleton('a\nb\nc', 3000) === 'a\nb\nc');
+  ok('blank lines are dropped', skeleton('a\n\n\nb', 3000) === 'a\nb');
+
+  // reading the survey back
+  const answer = '---\ntitle: The Cardiac Cycle\nsubject: Physiology\n---\n\nOUTLINE\n- The four phases\n- Output\n* Heart sounds\n';
+  const { frontMatter, outline } = readSurvey(answer);
+  ok('survey front matter is kept whole', frontMatter === '---\ntitle: The Cardiac Cycle\nsubject: Physiology\n---');
+  ok('survey outline is read', outline.join('|') === 'The four phases|Output|Heart sounds');
+  ok('an outline bullet is not taken from the front matter', !outline.includes('title: The Cardiac Cycle'));
+  ok('"(none)" means no sections', readSurvey('---\ntitle: x\n---\n\nOUTLINE\n- (none)').outline.length === 0);
+  ok('a fenced answer still parses', readSurvey('```markdown\n---\ntitle: x\n---\n\nOUTLINE\n- A\n```').outline.join('') === 'A');
+  ok('a survey with no front matter is survivable', readSurvey('OUTLINE\n- A\n- B').outline.length === 2);
+
+  // headings feed the next piece
+  ok('headings are collected', headingsIn('## One\ntext\n### Two\n# Nope').join('|') === 'One|Two');
+  ok('a hash inside a line is not a heading', headingsIn('see ## One').length === 0);
+
+  // the key the user is most likely to paste by mistake
+  ok('an AI Studio key is accepted', inspectKey('AIzaSy' + 'a'.repeat(33)).ok);
+  ok('an OAuth token is refused', inspectKey('ya29.abcdef').ok === false);
+  ok('a short-lived token is refused', inspectKey('AQ.Ab8RN6Kfn7MF').ok === false);
+  ok('an empty key is refused', inspectKey('').ok === false);
 }
 
 /* ---------- report ---------- */

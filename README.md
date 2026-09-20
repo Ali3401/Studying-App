@@ -26,10 +26,16 @@ live, and it remembers.
 
 **Reads as pages, if you'd rather.** Scroll, one page at a time, or a two-page
 spread like an open book — turn with the arrow keys, by clicking either edge,
-or by swiping. The **Book** reading style goes further: warm paper stock, a
-serif face, justified indented paragraphs, and callouts set the way a printed
-book would set them, in hairline rules and small caps rather than glowing
-panels.
+or by swiping. In either of the paged flows the page becomes a physical thing:
+it lies on a desk with room around it, the cut edge of the block shows as fine
+ruled lines down the outer margin, an open book has a gutter shadow down its
+fold, and a running head and folio sit where a printed book puts them — the
+note on the verso, the section on the recto, page one left bare. Turning
+sweeps the shadow of the lifting leaf across the page. The toolbar gives up
+its panel so nothing competes with the paper. The **Book** reading style goes
+further: warm stock, a serif face, justified indented paragraphs, a drop
+capital, and callouts set the way a printed book would set them, in hairline
+rules and small caps rather than glowing panels.
 
 **Understands how notes are structured.** On top of ordinary Markdown, Lucid
 reads callouts (`::: key`, `::: warn`, `::: exam`, `::: definition`…), numbered
@@ -60,6 +66,18 @@ were headings from their size and weight, notices two-column layouts, and turns
 "Important:" and "Q:/A:" into real callouts and flashcards. Slides keep their
 pictures and speaker notes. A page that is really a diagram comes in as an
 image. Then you edit whatever it got wrong.
+
+**And has Gemini read it properly.** Position tells you a lot about a handout
+but not everything — which line was really a heading, where one idea ends, what
+that run of text was actually a list of. Add your own free
+[AI Studio key](https://aistudio.google.com/apikey) and Lucid will skim the
+whole document first to work out what it is and how it is laid out, then
+rewrite it a piece at a time with that plan in hand, so a forty-page lecture
+comes out consistent from end to end. With a key saved it runs by itself the
+moment a file is read; the extracted text is kept, so one tap puts it back.
+Only text is ever sent — never page images, which is why PDF pictures default
+to None and why this stays well inside the free tier. The key lives in your
+browser and nowhere else.
 
 **Remembers what you've revised.** Every `::: quiz` question and every card you
 make becomes a scheduled flashcard. Grade it Again / Hard / Good / Easy and it
