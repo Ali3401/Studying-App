@@ -5,7 +5,7 @@ import * as settings from './core/settings.js';
 import * as store from './core/store.js';
 import * as router from './core/router.js';
 import * as HL from './core/highlights.js';
-import { toast, closeSheet, closeMenu, closeLightbox, sheetOpen } from './ui/ui.js';
+import { toast, closeSheet, closeMenu, closeLightbox, sheetOpen, confirmDialog } from './ui/ui.js';
 import * as palette from './ui/palette.js';
 import { openAppearance, shortcutsSheet } from './ui/appearance.js';
 import { exportDoc, printDoc } from './ui/exporter.js';
@@ -147,26 +147,46 @@ function wireGlobal() {
   // pasting a wall of text into the library makes a note out of it
   addEventListener('paste', async (e) => {
     if (!$('.view-library') || $('.view-library').hidden) return;
-    if (e.target.closest('input, textarea, [contenteditable]')) return;
+    const t = e.target;
+    if (t && typeof t.closest === 'function' && t.closest('input, textarea, [contenteditable]')) return;
     const text = e.clipboardData?.getData('text/plain') || '';
     if (text.trim().length < 40) return;
     e.preventDefault();
-    const { splitFrontmatter } = await import('./parse/lmd.js');
-    const { meta } = splitFrontmatter(text);
-    const doc = await store.create({
-      title: meta.title || firstLine(text),
-      subject: meta.subject || settings.get('lastSubject') || '',
-      tags: meta.tags || [],
-      emoji: meta.emoji || '',
-      accent: meta.accent || null,
-      markdown: text,
-    });
-    toast('Note created from your clipboard', { icon: 'check' });
-    router.go('reader', { id: doc.id });
+
+    const existing = store.findDuplicate(text);
+    if (existing) {
+      confirmDialog({
+        title: 'You already have this',
+        message: `“${existing.title}” starts with the same text and is about the same length. Open it instead of making a second copy?`,
+        confirmLabel: 'Open the one I have',
+        onConfirm: () => router.go('reader', { id: existing.id }),
+      });
+      // the Cancel button makes the copy anyway
+      const foot = $('#sheet-foot');
+      const cancel = foot?.querySelector('.btn-outline');
+      if (cancel) { cancel.textContent = 'Make a copy anyway'; cancel.onclick = () => { closeSheet(); createFromPaste(text); }; }
+      return;
+    }
+    createFromPaste(text);
   });
 
   addEventListener('beforeunload', () => { store.flush(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) store.flush(); });
+}
+
+async function createFromPaste(text) {
+  const { splitFrontmatter } = await import('./parse/lmd.js');
+  const { meta } = splitFrontmatter(text);
+  const doc = await store.create({
+    title: meta.title || firstLine(text),
+    subject: meta.subject || settings.get('lastSubject') || '',
+    tags: meta.tags || [],
+    emoji: meta.emoji || '',
+    accent: meta.accent || null,
+    markdown: text,
+  });
+  toast('Note created from your clipboard', { icon: 'check' });
+  router.go('reader', { id: doc.id });
 }
 
 const firstLine = (t) => {

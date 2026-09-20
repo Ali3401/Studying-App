@@ -6,7 +6,7 @@ import * as settings from '../core/settings.js';
 import { parse, buildFrontmatter, splitFrontmatter } from '../parse/lmd.js';
 import { render as renderAst } from '../parse/render.js';
 import { tidy, guessTitle, guessSubject } from '../import/tidy.js';
-import { toast, lightbox, confirmDialog } from '../ui/ui.js';
+import { toast, lightbox, confirmDialog, closeSheet } from '../ui/ui.js';
 import { go } from '../core/router.js';
 
 let bound = false;
@@ -204,11 +204,26 @@ const resolvePreview = (src) => {
 
 /* ---------------- create ---------------- */
 
-async function createNote({ silent = false } = {}) {
+async function createNote({ silent = false, force = false } = {}) {
   if (!job) return;
   const useSource = tab === 'source' && $('#import-source').value.trim();
   let markdown = useSource ? $('#import-source').value : composed().markdown;
   const { meta } = splitFrontmatter(markdown);
+
+  if (!force && !silent) {
+    const existing = store.findDuplicate(markdown);
+    if (existing) {
+      confirmDialog({
+        title: 'You have imported this before',
+        message: `“${existing.title}” came from the same material. Open it instead of importing a second copy?`,
+        confirmLabel: 'Open the one I have',
+        onConfirm: () => { job = null; resetUI(); go('reader', { id: existing.id }); },
+      });
+      const cancel = $('#sheet-foot')?.querySelector('.btn-outline');
+      if (cancel) { cancel.textContent = 'Import anyway'; cancel.onclick = () => { closeSheet(); createNote({ force: true }); }; }
+      return;
+    }
+  }
 
   const doc = await store.create({
     title: meta.title || 'Imported note',

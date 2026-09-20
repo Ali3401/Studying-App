@@ -158,6 +158,35 @@ export function writeFrontmatter(doc) {
   return doc.markdown;
 }
 
+/** A rough fingerprint of a note's prose, for spotting the same paste twice. */
+export function fingerprint(markdown) {
+  const text = textOf(parse(markdown).blocks)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return { head: text.slice(0, 400), length: text.length };
+}
+
+/**
+ * An existing note that looks like the same material, or null.
+ * Matches on the opening 400 characters and a similar overall length, which
+ * catches "pasted the same summary twice" without flagging a genuine rewrite.
+ */
+export function findDuplicate(markdown, { ignoreId = null } = {}) {
+  const a = fingerprint(markdown);
+  if (a.head.length < 120) return null;
+  for (const doc of all()) {
+    if (doc.id === ignoreId) continue;
+    const b = fingerprint(doc.markdown);
+    if (b.head.length < 120) continue;
+    if (a.head !== b.head) continue;
+    const ratio = Math.min(a.length, b.length) / Math.max(a.length, b.length || 1);
+    if (ratio > 0.85) return doc;
+  }
+  return null;
+}
+
 export function subjects() {
   const m = new Map();
   for (const d of all()) {

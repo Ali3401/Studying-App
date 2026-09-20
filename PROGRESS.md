@@ -99,6 +99,9 @@ workflow cannot enable it.
     `Element.append()` stringifies them, so a note with no subject or no
     quiz rendered the word "null". Use `add()` from `core/util.js` for any
     append with a conditional child.
+14. **The paste handler could throw.** It called `e.target.closest(...)`,
+    and a paste whose target is not an element (`window`, `document`) has no
+    such method. Guarded.
 13. **Focus never came back from a dialog.** Chrome does not always blur
     what is inside an element you hide, so the "has focus moved somewhere
     real?" guard saw focus still inside the closed dialog and skipped the
@@ -157,7 +160,10 @@ Ordered by how much they actually matter to someone using this to study.
    back to the opener. Menus take arrow keys too.
 8. **Study stats.** Partly done — the finished screen shows due now / this
    week / total, and subject chips carry a due badge. A streak is still open.
-9. **Reader gestures.** Swipe from the left edge to open the outline on
-   iPad.
-10. **Duplicate detection.** Warn before creating a second copy of a note that
-    was pasted twice.
+9. ~~**Reader gestures.**~~ Done — swipe in from the left edge for the
+   outline, from the right for the highlights, and swipe an open panel away.
+   Touch only, and only when the panels float over the page.
+10. ~~**Duplicate detection.**~~ Done — `store.findDuplicate()` compares the
+    opening 400 characters of the prose and the overall length, so pasting or
+    importing the same material twice offers to open the one you have. A half
+    -length excerpt is not treated as a duplicate.

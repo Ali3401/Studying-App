@@ -556,6 +556,7 @@ function bind() {
   const main = $('#read-main');
   main.addEventListener('scroll', updateProgress, { passive: true });
   $('#panel-scrim').addEventListener('click', closeOverlayPanels);
+  bindSwipe();
 
   // focus-mode escape hatch
   $('.view-reader').append(el('div', { class: 'focus-exit' },
@@ -678,6 +679,50 @@ function docMenu(anchor) {
         onConfirm: async () => { await store.remove(doc.id); toast('Note deleted', { icon: 'trash' }); go('library'); },
       }) },
   ], { anchor });
+}
+
+/* ---------------- touch gestures ---------------- */
+
+const EDGE = 30;        // how close to the side a swipe has to start
+const TRAVEL = 55;      // how far it has to go
+const SLOP = 34;        // how much vertical drift is still a horizontal swipe
+
+/**
+ * Swipe in from an edge to open the outline or the notes panel, and swipe an
+ * open panel away again. Only on touch, and only when the panels are floating
+ * over the page — otherwise it would fight with scrolling and text selection.
+ */
+function bindSwipe() {
+  const shell = $('.read-shell');
+  let x0 = 0, y0 = 0, t0 = 0, live = false;
+
+  shell.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1 || innerWidth > OVERLAY_AT) { live = false; return; }
+    const t = e.touches[0];
+    x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+    const open = shell.classList.contains('show-outline') || shell.classList.contains('show-notes');
+    live = open || x0 <= EDGE || x0 >= innerWidth - EDGE;
+  }, { passive: true });
+
+  shell.addEventListener('touchend', (e) => {
+    if (!live) return;
+    live = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - x0, dy = t.clientY - y0;
+    if (Math.abs(dy) > SLOP || Math.abs(dx) < TRAVEL) return;
+    if (Date.now() - t0 > 700) return;
+
+    const outlineOpen = shell.classList.contains('show-outline');
+    const notesOpen = shell.classList.contains('show-notes');
+
+    if (dx > 0) {
+      if (notesOpen) closeOverlayPanels();
+      else if (!outlineOpen && x0 <= EDGE) togglePanel('outline', true);
+    } else {
+      if (outlineOpen) closeOverlayPanels();
+      else if (!notesOpen && x0 >= innerWidth - EDGE) { togglePanel('notes', true); renderNotesPanel(); }
+    }
+  }, { passive: true });
 }
 
 /* ---------------- shortcuts exposed to main ---------------- */
