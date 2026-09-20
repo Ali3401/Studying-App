@@ -8,11 +8,17 @@ import { render as renderAst } from '../parse/render.js';
 import { tidy, guessTitle, guessSubject } from '../import/tidy.js';
 import { toast, lightbox, confirmDialog, closeSheet } from '../ui/ui.js';
 import { go } from '../core/router.js';
+import * as ai from '../core/ai.js';
 
 let bound = false;
 let job = null;       // { name, raw, images:[{blob,url}], kind, meta }
 let lastFile = null;  // kept so changing an option can re-read the same file
+let aiBefore = null;  // the markdown as it was before the model touched it
+let aiRun = null;     // AbortController for a rewrite in flight
 let tab = 'preview';
+
+let actions = {};
+export function configure(a) { actions = a; }
 
 export const view = {
   async mount() {
@@ -82,8 +88,9 @@ async function handleFiles(files) {
 
 async function runOne(file, { silent = false } = {}) {
   lastFile = file;
+  aiBefore = null;
   const ext = (file.name.split('.').pop() || '').toLowerCase();
-  job = { name: file.name, kind: ext, images: [], meta: {}, raw: '' };
+  job = { name: file.name, kind: ext, images: [], meta: {}, raw: '', aiMarkdown: null };
   const o = opts();
 
   const onProgress = (n, total, label) => { if (!silent) status(label, total ? n / total : null); };
@@ -145,6 +152,10 @@ async function runOne(file, { silent = false } = {}) {
 
 function composed() {
   const o = opts();
+  if (job.aiMarkdown) {
+    const { meta } = splitFrontmatter(job.aiMarkdown);
+    return { markdown: job.aiMarkdown, title: meta.title || '', subject: meta.subject || '' };
+  }
   const isPlain = job.meta.plain && /^---\s*\n/.test(job.raw);
   const { meta, body } = splitFrontmatter(job.raw);
   let cleaned = job.meta.plain && isPlain ? body : tidy(body, o);
@@ -181,6 +192,7 @@ const iconFor = (kind) => ({ pdf: '📕', pptx: '📊', docx: '📄', md: '📝'
 function showResult() {
   if (!job) return;
   $('#import-opts').hidden = false;
+  refreshAi();
   $('#import-preview-head').hidden = false;
   $('#import-create').disabled = false;
 
@@ -204,6 +216,67 @@ const resolvePreview = (src) => {
   if (m) return job.urls[+m[1]] || '';
   return store.resolveImage(src);
 };
+
+/* ---------------- AI clean-up ---------------- */
+
+function refreshAi() {
+  const ready = ai.hasKey();
+  $('#ai-setup').hidden = ready;
+  $('#ai-rewrite').hidden = !ready;
+  $('#ai-undo').hidden = !job?.aiMarkdown;
+  $('#ai-rewrite-label').textContent = job?.aiMarkdown ? 'Rewrite again' : 'Rewrite with AI';
+  $('#ai-blurb').textContent = ready
+    ? 'A model reads the extracted text and works out what was a heading, a list, a definition — the things position alone cannot tell you. Only text is sent, never pictures.'
+    : 'Lucid can have Gemini restructure the extracted text for you. It needs your own free key, kept on this device.';
+}
+
+async function aiRewrite() {
+  if (!job) return;
+  if (!ai.hasKey()) { actions.openAppearance?.('data'); return; }
+
+  const source = tab === 'source' && $('#import-source').value.trim()
+    ? $('#import-source').value
+    : composed().markdown;
+
+  aiBefore = job.aiMarkdown || null;
+  aiRun = new AbortController();
+
+  const wrap = $('#ai-progress');
+  wrap.hidden = false;
+  $('#ai-rewrite').disabled = true;
+
+  try {
+    const markdown = await ai.restructure(source, {
+      signal: aiRun.signal,
+      onProgress: (done, total, label) => {
+        $('#ai-bar').style.width = `${Math.round((done / Math.max(1, total)) * 100)}%`;
+        $('#ai-status').textContent = label;
+      },
+    });
+    job.aiMarkdown = markdown;
+    showResult();
+    toast('Rewritten', { icon: 'sparkle' });
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    console.error(e);
+    const why = e instanceof ai.AiError ? e.message : 'Something went wrong talking to Gemini.';
+    toast(why, { kind: 'err', icon: 'help', ms: 7000,
+      action: e?.kind === 'key' || e?.kind === 'no-key' ? { label: 'Settings', fn: () => actions.openAppearance?.('data') } : undefined });
+  } finally {
+    wrap.hidden = true;
+    $('#ai-bar').style.width = '0%';
+    $('#ai-rewrite').disabled = false;
+    aiRun = null;
+  }
+}
+
+function aiUndo() {
+  if (!job) return;
+  job.aiMarkdown = aiBefore || null;
+  aiBefore = null;
+  showResult();
+  toast('Reverted to the extracted text', { icon: 'back' });
+}
 
 /* ---------------- create ---------------- */
 
@@ -324,11 +397,18 @@ function bind() {
   });
 
   $('#import-opts').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-act="import-reparse"]');
+    const b = e.target.closest('[data-act]');
     if (!b) return;
-    if (!job) { toast('Add a file first', { kind: 'warn', icon: 'help' }); return; }
-    showResult();
-    toast('Clean-up re-run', { icon: 'refresh' });
+    const act = b.dataset.act;
+    if (act === 'import-reparse') {
+      if (!job) { toast('Add a file first', { kind: 'warn', icon: 'help' }); return; }
+      job.aiMarkdown = null;
+      showResult();
+      toast('Clean-up re-run', { icon: 'refresh' });
+    }
+    if (act === 'ai-rewrite') aiRewrite();
+    if (act === 'ai-undo') aiUndo();
+    if (act === 'ai-setup') actions.openAppearance?.('data');
   });
 
   $$('.seg-btn[data-imptab]').forEach(b => b.addEventListener('click', () => {

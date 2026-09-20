@@ -26,6 +26,7 @@ const CORE = [
   './src/core/sample.js',
   './src/core/safety.js',
   './src/core/pager.js',
+  './src/core/ai.js',
   './src/parse/lmd.js',
   './src/parse/render.js',
   './src/ui/ui.js',

@@ -39,6 +39,7 @@ async function boot() {
   library.configure(shared);
   reader.configure(shared);
   editor.configure(shared);
+  importer.configure(shared);
 
   router.register('library', library.view);
   router.register('reader', reader.view);

@@ -147,6 +147,10 @@ or without `configure-pages`' `enablement: true`.
 19. **Heading levels came from absolute size ratios**, so a handout that
     separates headings by two points made everything an h4. Ranked by size
     around the *heaviest* heading size instead.
+22. **A scripted edit silently did nothing.** A `str.replace` anchored on
+    `add(root,` found no match because that function still used
+    `root.append(`, so a whole settings section never rendered and nothing
+    errored. Patch scripts now assert their anchor exists before writing.
 21. **The service worker never registered, so offline never worked.**
     Registration was deferred with `addEventListener('load', …)`, but `boot()`
     is async and finishes *after* the load event has already fired, so the
@@ -190,6 +194,29 @@ or without `configure-pages`' `enablement: true`.
 3. Keep this file current, and commit after each meaningful step.
 
 ---
+
+## AI clean-up (optional)
+
+`src/core/ai.js` sends the extracted text to Gemini and asks it to restructure
+it into Lucid Markdown. This is the one thing the geometric heuristics cannot
+do: work out from *meaning* which line was a heading and where a thought ends.
+
+- **The key is never in the repository.** It lives in this browser's
+  localStorage, entered in Appearance → Data. The repo is public; a committed
+  key would be readable by anyone and flagged by secret scanning within
+  minutes.
+- **Only text is uploaded**, never page images — cheaper, faster, and well
+  inside the free tier. PDF pictures now default to None for the same reason.
+- Long documents are split into ~7000-character chunks at blank lines (the
+  splitter is tested for losslessness); the first chunk asks for front matter,
+  later ones are told not to repeat it.
+- The prompt forbids inventing, summarising or decorating — restructure only.
+- `inspectKey()` catches the common mistake of pasting an OAuth token or an
+  `AQ.…` token instead of an `AIza…` AI Studio key, and says so before making
+  a request that would fail confusingly.
+- 429 is retried with backoff, since the free tier rate-limits rather than
+  failing.
+- Every rewrite is undoable; the extracted text is kept.
 
 ## Reading modes
 

@@ -6,6 +6,7 @@ import * as store from '../core/store.js';
 import { sheet, closeSheet, toast, confirmDialog, sliderRow, toggleRow, optionRow, row } from './ui.js';
 import { SAMPLE, WELCOME } from '../core/sample.js';
 import * as safety from '../core/safety.js';
+import * as ai from '../core/ai.js';
 
 let tab = 'theme';
 let rerender = () => {};
@@ -255,8 +256,9 @@ async function dataTab(root) {
     );
   });
 
-  root.append(
+  add(root,
     el('div', { class: 'group' }, el('h4', { text: 'What you have' }), statsRow),
+    aiSection(),
     el('div', { class: 'group' }, el('h4', { text: 'Storage' }), usage,
       el('p', { class: 'hint', text: store.usingFallback()
         ? 'This browser blocked its database, so Lucid is using a smaller fallback store. Back up regularly.'
@@ -391,4 +393,84 @@ export function shortcutsSheet() {
     }
   }
   sheet({ title: 'Keyboard shortcuts', body: grid, foot: el('button', { class: 'btn btn-primary', text: 'Done', onclick: () => closeSheet() }) });
+}
+
+/* ---------------- AI clean-up ---------------- */
+
+function aiSection() {
+  const wrap = el('div', { class: 'group' }, el('h4', { text: 'AI clean-up for imports' }));
+
+  const input = el('input', {
+    type: 'password', placeholder: 'AIza…', autocomplete: 'off', spellcheck: 'false',
+    value: ai.getKey(),
+    style: { width: '100%', minHeight: 'var(--tap)', padding: '0 12px', background: 'var(--surface)',
+             border: 'var(--border-w) solid var(--line)', borderRadius: 'var(--radius-sm)',
+             outline: 'none', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-sm)' },
+  });
+  const reveal = el('button', {
+    class: 'btn btn-icon btn-sm', title: 'Show or hide the key',
+    onclick: () => { input.type = input.type === 'password' ? 'text' : 'password'; },
+  }, el('span', { class: 'i', dataset: { icon: 'eye' } }));
+
+  const verdict = el('p', { class: 'hint', id: 'ai-verdict' });
+  const modelWrap = el('div', { class: 'stack' });
+
+  const say = (text, tone) => {
+    verdict.textContent = text;
+    verdict.style.color = tone === 'bad' ? 'hsl(355 70% 62%)' : tone === 'good' ? 'hsl(150 55% 45%)' : '';
+  };
+
+  const paintModels = (models) => {
+    modelWrap.innerHTML = '';
+    if (!models?.length) return;
+    const select = el('select', { class: 'select', style: { width: '100%' },
+      onchange: (e) => { ai.setModel(e.target.value); say(`Using ${e.target.value}.`, 'good'); } });
+    for (const m of models) {
+      const opt = el('option', { value: m.id, text: m.label || m.id });
+      if (m.id === ai.getModel()) opt.selected = true;
+      select.append(opt);
+    }
+    // if the saved model is not in the list, fall back to the first one
+    if (!models.some(m => m.id === ai.getModel())) { ai.setModel(models[0].id); select.value = models[0].id; }
+    add(modelWrap, el('div', { class: 'row' }, el('span', { text: 'Model' })), select);
+  };
+
+  const check = async () => {
+    ai.setKey(input.value);
+    const look = ai.inspectKey();
+    if (!look.ok && !ai.getKey()) { say(look.why); modelWrap.innerHTML = ''; return; }
+    if (!look.ok) say(look.why + ' Checking anyway…');
+    else say('Checking…');
+    try {
+      const models = await ai.testKey();
+      say(`Works — ${models.length} models available.`, 'good');
+      paintModels(models);
+    } catch (e) {
+      say(e.message || 'That key did not work.', 'bad');
+      modelWrap.innerHTML = '';
+    }
+  };
+
+  input.addEventListener('change', () => { ai.setKey(input.value); });
+
+  add(wrap,
+    el('p', { class: 'hint', text: 'A PDF tells us the words but not which line was a heading, where a thought ends, or what was a list. A model reading the text can work that out. Only text is ever sent — never page images, which keeps it well inside the free tier.' }),
+    el('div', { style: { display: 'flex', gap: 'var(--gap-2)' } }, input, reveal),
+    el('div', { style: { display: 'flex', gap: 'var(--gap-2)' } },
+      el('button', { class: 'btn btn-outline', style: { flex: '1' }, onclick: check },
+        el('span', { class: 'i', dataset: { icon: 'check' } }), el('span', { text: 'Check the key' })),
+      ai.hasKey() ? el('button', { class: 'btn btn-danger', onclick: () => {
+        ai.setKey(''); input.value = ''; say('Key removed.'); modelWrap.innerHTML = '';
+      } }, el('span', { text: 'Forget' })) : null,
+    ),
+    verdict,
+    modelWrap,
+    el('p', { class: 'hint', html: 'Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>. It is stored in this browser only — it never goes into the repository and is never sent anywhere but Google.' }),
+  );
+
+  if (ai.hasKey()) {
+    const look = ai.inspectKey();
+    say(look.ok ? 'Saved. Check it to list the models.' : look.why, look.ok ? '' : 'bad');
+  }
+  return wrap;
 }
