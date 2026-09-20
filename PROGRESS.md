@@ -10,7 +10,8 @@ Working notes so any session can pick this up cold. Newest status at the top.
 
 Every feature the brief asked for is built, tested in a real browser
 (Chromium via Playwright at desktop, iPad portrait/landscape and iPhone sizes),
-and pushed. `node tools/selftest.mjs` passes 107/107.
+and pushed. `node tools/selftest.mjs` passes 107/107, and fourteen browser
+suites run clean with no console errors.
 
 ### What exists
 
@@ -36,12 +37,21 @@ python3 -m http.server 8000     # then open http://localhost:8000
 node tools/selftest.mjs         # 75 assertions, no browser needed
 ```
 
-### Deploying
+### Deploying — one manual step is outstanding
 
-`.github/workflows/pages.yml` runs the self test then publishes to GitHub
-Pages. **It only works once Pages is switched on:** repo → Settings → Pages →
-Build and deployment → Source: **GitHub Actions**. That is a human step; the
-workflow cannot enable it.
+`.github/workflows/pages.yml` runs the self test (passing) then publishes to
+GitHub Pages. **The deploy job fails until Pages is switched on**, and a
+workflow cannot switch it on itself: the token comes back
+`Resource not accessible by integration` from the create-Pages-site API. This
+was tried with `configure-pages`' `enablement: true` and refused.
+
+So: repo → Settings → Pages → Build and deployment → Source: **GitHub
+Actions**, then re-run the workflow. The workflow now checks for this first
+and fails with a titled error saying exactly that, instead of the opaque
+"Get Pages site failed".
+
+Once it is on, the site lands at https://ali3401.github.io/Studying-App/ and
+every push redeploys it.
 
 ---
 

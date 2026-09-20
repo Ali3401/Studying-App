@@ -41,11 +41,25 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      # enablement turns Pages on for the repository if it is not already,
-      # so this works without anyone visiting the settings page
+
+      # The workflow token is not allowed to create the Pages site, so if it
+      # has never been switched on, say so in a way that is hard to misread
+      # rather than failing with "Get Pages site failed".
+      - name: Check that Pages is switched on
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages")
+          if [ "$code" = "404" ]; then
+            echo "::error title=GitHub Pages has not been switched on::Open Settings then Pages, set Source to 'GitHub Actions', and re-run this workflow. That is the only manual step; everything else deploys itself. The tests above already passed."
+            exit 1
+          fi
+          echo "Pages is enabled (HTTP $code)."
+
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .

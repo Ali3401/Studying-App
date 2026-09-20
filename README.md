@@ -88,13 +88,18 @@ modules and IndexedDB on `file://`, so use a server.
 
 ### Putting it on the web
 
-The repository ships a GitHub Actions workflow that publishes the site to
-GitHub Pages on every push.
+The repository ships a GitHub Actions workflow that runs the tests and
+publishes the site to GitHub Pages on every push.
+
+**One manual step is needed first**, because a workflow is not allowed to
+switch Pages on for a repository:
 
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions**
-2. Push to the default branch.
-3. Open `https://<your-username>.github.io/<repo>/` on your iPad.
-4. Share → **Add to Home Screen**.
+2. Re-run the latest workflow (or push anything). It deploys by itself from
+   then on.
+3. Open `https://ali3401.github.io/Studying-App/` on your iPad.
+4. Share → **Add to Home Screen**. Do this — it is also what persuades Safari
+   to stop clearing your notes to reclaim space.
 
 Any static host works just as well — Netlify, Vercel, Cloudflare Pages, or a
 folder on a web server. There is no backend to deploy.
