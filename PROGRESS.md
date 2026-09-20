@@ -188,6 +188,37 @@ every push redeploys it.
 
 ---
 
+## Reading modes
+
+`src/core/pager.js` turns the article into a CSS multi-column box as tall as
+the window, so text flows into column after column off to the right and a page
+turn is a horizontal translate. Nothing about the DOM changes, which is why
+highlights, find and the outline keep working — they just ask the pager which
+page an element landed on.
+
+Three flows, set in Appearance → Layout: `scroll`, `paged`, `book` (a two-page
+spread, falling back to one page under 720px).
+
+Two things about it are easy to get wrong:
+
+- **The advance is the content width plus the gap**, not the element width.
+  Columns are laid out in the content box, so including padding puts every
+  page a little further out than the last.
+- **`scrollWidth` on an overflowing multicol box is not dependable.** The page
+  count comes from a zero-width probe appended to the end of the flow, which
+  lands in the last column and can simply be measured.
+- **The clipping has to happen on a frame, not on the scroller.** A page
+  narrower than the viewport would otherwise show its neighbouring columns in
+  the margins either side.
+
+## Reading styles
+
+`settings.PRESETS` bundles theme, typeface, flow, callout treatment, justification
+and indents into one tap: **Lucid** (the default), **Book** (warm stock, two
+pages, indented justified paragraphs, callouts set as hairline rules and small
+caps) and **Manuscript**. `data-callouts="quiet"` is what turns the coloured
+panels into something a printed book would do.
+
 ## Polish list — all ten done ✅
 
 Ordered by how much they actually matter to someone using this to study.

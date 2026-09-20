@@ -6,6 +6,7 @@ import * as settings from '../core/settings.js';
 import { render as renderAst } from '../parse/render.js';
 import { plain } from '../parse/lmd.js';
 import * as HL from '../core/highlights.js';
+import { createPager } from '../core/pager.js';
 import { menu, toast, sheet, closeSheet, lightbox, confirmDialog, promptDialog } from '../ui/ui.js';
 import { go, back } from '../core/router.js';
 
@@ -16,6 +17,7 @@ let bound = false;
 let activeAnchors = [];
 let hlFilter = new Set();
 let findState = { q: '', hits: [], idx: -1 };
+let pager = null;
 let actions = {};
 
 export function configure(a) { actions = a; }
@@ -31,9 +33,14 @@ export const view = {
     await store.preloadImages(doc);
     renderDoc();
     applyPanels();
+    pager.setMode(settings.get('flow'));
     requestAnimationFrame(() => {
-      const main = $('#read-main');
-      main.scrollTop = (doc.progress || 0) * Math.max(0, main.scrollHeight - main.clientHeight);
+      relayout();
+      if (pager.paged) pager.restore(doc.progress || 0);
+      else {
+        const main = $('#read-main');
+        main.scrollTop = (doc.progress || 0) * Math.max(0, main.scrollHeight - main.clientHeight);
+      }
       updateProgress();
     });
   },
@@ -106,6 +113,8 @@ function renderDoc() {
   buildOutline();
   renderNotesPanel();
 
+  if (pager) requestAnimationFrame(relayout);
+
   $('#meta-words').textContent = derived.words.toLocaleString();
   $('#meta-time').textContent = `${readTime(derived.words)} min`;
   $('#meta-hl').textContent = String(doc.highlights.length);
@@ -135,7 +144,9 @@ function buildOutline() {
       onclick: () => {
         const target = document.getElementById(h.id);
         if (!target) return;
-        target.scrollIntoView({ block: 'start', behavior: settings.get('motion') === 'off' ? 'auto' : 'smooth' });
+        if (pager?.paged) pager.go(pager.pageOf(target));
+        else target.scrollIntoView({ block: 'start', behavior: settings.get('motion') === 'off' ? 'auto' : 'smooth' });
+        updateProgress();
         if (innerWidth <= 1000) togglePanel('outline', false);
       },
     }));
@@ -187,6 +198,15 @@ function renderNeighbours() {
       prev ? card(prev, 'prev') : el('span'),
       next ? card(next, 'next') : el('span')),
   );
+}
+
+/** Re-measure after anything that changes how the text flows. */
+function relayout() {
+  if (!pager) return;
+  const where = pager.progress();
+  pager.measure();
+  if (pager.paged) pager.restore(where);
+  updateProgress();
 }
 
 /* ---------------- panels ---------------- */
@@ -282,7 +302,8 @@ function byDocumentOrder(a, b) {
 function jumpToHighlight(h) {
   const span = $(`#prose [data-hl="${CSS.escape(h.id)}"]`);
   if (!span) { toast('That highlight has drifted — reopen the note to relocate it', { kind: 'warn', icon: 'help' }); return; }
-  span.scrollIntoView({ block: 'center', behavior: settings.get('motion') === 'off' ? 'auto' : 'smooth' });
+  if (pager?.paged) pager.go(pager.pageOf(span));
+  else span.scrollIntoView({ block: 'center', behavior: settings.get('motion') === 'off' ? 'auto' : 'smooth' });
   $$('#prose .hl.is-focus').forEach(s => s.classList.remove('is-focus'));
   $$(`#prose [data-hl="${CSS.escape(h.id)}"]`).forEach(s => s.classList.add('is-focus'));
   setTimeout(() => $$('#prose .hl.is-focus').forEach(s => s.classList.remove('is-focus')), 2200);
@@ -455,18 +476,31 @@ const saveProgress = debounce(() => { if (doc) store.saveSoon(doc); }, 900);
 const updateProgress = throttle(() => {
   const main = $('#read-main');
   if (!main || !doc) return;
-  const max = Math.max(1, main.scrollHeight - main.clientHeight);
-  const p = clamp(main.scrollTop / max, 0, 1);
-  $('#read-progress-bar').style.width = (p * 100).toFixed(2) + '%';
-  if (Math.abs(p - (doc.progress || 0)) > 0.01) { doc.progress = p; saveProgress(); }
 
-  // active outline entry
-  let activeId = null;
-  const top = main.getBoundingClientRect().top + 110;
-  for (const h of outlineData) {
-    const node = document.getElementById(h.id);
-    if (node && node.getBoundingClientRect().top <= top) activeId = h.id;
+  let p, activeId = null;
+
+  if (pager?.paged) {
+    p = pager.progress();
+    $('#page-count').textContent = pager.count > 1 ? `${pager.index + 1} / ${pager.count}` : '';
+    $('#turn-prev').disabled = pager.index === 0;
+    $('#turn-next').disabled = pager.index >= pager.count - 1;
+    // the last heading that has already begun on, or before, this page
+    for (const h of outlineData) {
+      const node = document.getElementById(h.id);
+      if (node && pager.pageOf(node) <= pager.index) activeId = h.id;
+    }
+  } else {
+    const max = Math.max(1, main.scrollHeight - main.clientHeight);
+    p = clamp(main.scrollTop / max, 0, 1);
+    $('#read-progress-bar').style.width = (p * 100).toFixed(2) + '%';
+    const top = main.getBoundingClientRect().top + 110;
+    for (const h of outlineData) {
+      const node = document.getElementById(h.id);
+      if (node && node.getBoundingClientRect().top <= top) activeId = h.id;
+    }
   }
+
+  if (Math.abs(p - (doc.progress || 0)) > 0.005) { doc.progress = p; saveProgress(); }
   $$('#outline-list .o-item').forEach(b => b.classList.toggle('is-on', b.dataset.target === activeId));
 }, 120);
 
@@ -517,6 +551,7 @@ function runFind(q) {
     try { r.surroundContents(span); findState.hits.unshift(span); } catch { /* skip */ }
   }
   $('#find-count').textContent = `${findState.hits.length ? 1 : 0}/${findState.hits.length}`;
+  if (pager?.paged) pager.measure();
   if (findState.hits.length) stepFind(0);
 }
 
@@ -526,7 +561,8 @@ function stepFind(delta) {
   findState.idx = (findState.idx + delta + findState.hits.length) % findState.hits.length;
   const cur = findState.hits[findState.idx];
   cur.classList.add('is-cur');
-  cur.scrollIntoView({ block: 'center', behavior: settings.get('motion') === 'off' ? 'auto' : 'smooth' });
+  if (pager?.paged) pager.go(pager.pageOf(cur));
+  else cur.scrollIntoView({ block: 'center', behavior: settings.get('motion') === 'off' ? 'auto' : 'smooth' });
   $('#find-count').textContent = `${findState.idx + 1}/${findState.hits.length}`;
 }
 
@@ -556,6 +592,21 @@ function bind() {
   const main = $('#read-main');
   main.addEventListener('scroll', updateProgress, { passive: true });
   $('#panel-scrim').addEventListener('click', closeOverlayPanels);
+
+  pager = createPager({
+    viewport: main,
+    sheet: $('#paper'),
+    onChange: () => { hidePopover(); },
+  });
+  $('#turn-prev').addEventListener('click', () => { pager.prev(); updateProgress(); });
+  $('#turn-next').addEventListener('click', () => { pager.next(); updateProgress(); });
+
+  settings.onChange((_, patch) => {
+    if ($('.view-reader').hidden) return;
+    if ('flow' in patch) pager.setMode(settings.get('flow'));
+    requestAnimationFrame(relayout);
+  });
+
   bindSwipe();
 
   // focus-mode escape hatch
@@ -640,7 +691,9 @@ function bind() {
     if (b.dataset.act === 'find-close') closeFind();
   });
 
-  addEventListener('resize', debounce(applyPanels, 200));
+  addEventListener('resize', debounce(() => { applyPanels(); relayout(); }, 200));
+  // web fonts and images settling change where the text breaks
+  addEventListener('load', () => relayout());
 }
 
 const existingColor = () => {
@@ -697,11 +750,14 @@ function bindSwipe() {
   let x0 = 0, y0 = 0, t0 = 0, live = false;
 
   shell.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1 || innerWidth > OVERLAY_AT) { live = false; return; }
+    if (e.touches.length !== 1) { live = false; return; }
     const t = e.touches[0];
     x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
     const open = shell.classList.contains('show-outline') || shell.classList.contains('show-notes');
-    live = open || x0 <= EDGE || x0 >= innerWidth - EDGE;
+    const edge = x0 <= EDGE || x0 >= innerWidth - EDGE;
+    // pages can be turned anywhere; panels only from the edges, and only
+    // while they float over the text
+    live = pager?.paged ? true : (innerWidth <= OVERLAY_AT && (open || edge));
   }, { passive: true });
 
   shell.addEventListener('touchend', (e) => {
@@ -714,6 +770,13 @@ function bindSwipe() {
 
     const outlineOpen = shell.classList.contains('show-outline');
     const notesOpen = shell.classList.contains('show-notes');
+    const fromEdge = x0 <= EDGE || x0 >= innerWidth - EDGE;
+
+    if (pager?.paged && !outlineOpen && !notesOpen && !fromEdge) {
+      dx < 0 ? pager.next() : pager.prev();
+      updateProgress();
+      return;
+    }
 
     if (dx > 0) {
       if (notesOpen) closeOverlayPanels();
@@ -740,7 +803,17 @@ export const keys = {
   isFocus: () => $('.view-reader').classList.contains('is-focus'),
   outline: () => togglePanel('outline'),
   notes: () => { togglePanel('notes'); renderNotesPanel(); },
-  scroll(delta) { $('#read-main').scrollBy({ top: delta, behavior: 'smooth' }); },
+  scroll(delta) {
+    if (pager?.paged) { delta > 0 ? pager.next() : pager.prev(); updateProgress(); return; }
+    $('#read-main').scrollBy({ top: delta, behavior: 'smooth' });
+  },
+  turn(dir) {
+    if (!pager?.paged) return false;
+    dir > 0 ? pager.next() : pager.prev();
+    updateProgress();
+    return true;
+  },
+  paged: () => !!pager?.paged,
   hasSelection: () => activeAnchors.length > 0,
   step(dir) {
     const { prev, next } = neighbours();

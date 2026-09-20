@@ -19,10 +19,17 @@ No account. No server. Nothing leaves your device.
 ## What it does
 
 **Reads beautifully.** Every note lands on the same page — the same measure, the
-same rhythm, the same spacing. Eight themes, eight typefaces, and sliders for
+same rhythm, the same spacing. Nine themes, eight typefaces, and sliders for
 text size, line height, line length, paragraph gap, first-line indent, letter
 spacing, word spacing, heading weight and corner radius. Everything applies
 live, and it remembers.
+
+**Reads as pages, if you'd rather.** Scroll, one page at a time, or a two-page
+spread like an open book — turn with the arrow keys, by clicking either edge,
+or by swiping. The **Book** reading style goes further: warm paper stock, a
+serif face, justified indented paragraphs, and callouts set the way a printed
+book would set them, in hairline rules and small caps rather than glowing
+panels.
 
 **Understands how notes are structured.** On top of ordinary Markdown, Lucid
 reads callouts (`::: key`, `::: warn`, `::: exam`, `::: definition`…), numbered

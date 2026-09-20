@@ -3,6 +3,16 @@
 .set-tab { flex: 1; min-height: 30px; border-radius: calc(var(--radius-sm) - 3px); color: var(--ink-3); font-size: var(--fs-sm); font-weight: 560; }
 .set-tab.is-on { background: var(--surface-hi); color: var(--ink); }
 
+.preset-row { display: flex; flex-direction: column; gap: var(--gap-2); }
+.preset { display: flex; flex-direction: column; gap: 3px; padding: var(--gap-3); text-align: left;
+  border-radius: var(--radius-sm); border: var(--border-w) solid var(--line); background: var(--surface);
+  transition: all var(--t-fast) var(--ease); }
+.preset:hover { border-color: var(--accent-line); background: var(--surface-2); }
+.preset.is-on { border-color: var(--accent); background: var(--accent-soft); }
+.preset-name { font-weight: 640; color: var(--ink); font-size: var(--fs-ui); }
+.preset-hint { color: var(--ink-4); font-size: var(--fs-sm); line-height: 1.45; }
+.preset.is-on .preset-name { color: var(--accent-ink); }
+
 .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--gap-2); }
 .theme-swatch { border-radius: var(--radius-sm); border: 2px solid var(--line); overflow: hidden; text-align: left; transition: all var(--t-fast) var(--ease); }
 .theme-swatch:hover { border-color: var(--accent-line); transform: translateY(-1px); }

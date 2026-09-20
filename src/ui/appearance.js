@@ -44,11 +44,22 @@ export function openAppearance(startTab) {
 }
 
 const S = settings.get;
+
+/** Is every value of this preset currently in force? */
+const matchesPreset = (p) => Object.entries(p.values).every(([k, v]) => S(k) === v);
 const set = (p) => { settings.set(p); };
 
 /* ---------------- theme ---------------- */
 
 function themeTab(root) {
+  const presets = el('div', { class: 'preset-row' }, ...settings.PRESETS.map(p => el('button', {
+    class: 'preset' + (matchesPreset(p) ? ' is-on' : ''),
+    onclick: () => { set(p.values); rerender(); toast(`${p.name} — applied`, { icon: 'wand', ms: 1600 }); },
+  },
+    el('span', { class: 'preset-name', text: p.name }),
+    el('span', { class: 'preset-hint', text: p.hint }),
+  )));
+
   const grid = el('div', { class: 'theme-grid' });
   const paint = () => {
     grid.innerHTML = '';
@@ -67,6 +78,11 @@ function themeTab(root) {
   paint();
 
   add(root,
+    el('div', { class: 'group' },
+      el('h4', { text: 'Reading style' }),
+      presets,
+      el('p', { class: 'hint', text: 'A starting point — every setting below stays yours to change afterwards.' }),
+    ),
     el('div', { class: 'group' },
       el('h4', { text: 'Theme' }),
       toggleRow('Follow the system', S('autoTheme'), (v) => { set({ autoTheme: v }); rerender(); },
@@ -99,6 +115,10 @@ function themeTab(root) {
       el('h4', { text: 'Page' }),
       optionRow('Surface', [{ id: 'flat', name: 'Flat' }, { id: 'card', name: 'Card' }], S('paper'), (v) => set({ paper: v })),
       optionRow('Texture', [{ id: 'plain', name: 'None' }, { id: 'grid', name: 'Grid' }, { id: 'dots', name: 'Dots' }, { id: 'lines', name: 'Ruled' }], S('texture'), (v) => set({ texture: v })),
+      optionRow('Callouts', [{ id: 'panel', name: 'Panels' }, { id: 'quiet', name: 'Book' }], S('callouts'), (v) => set({ callouts: v })),
+      el('p', { class: 'hint', text: S('callouts') === 'quiet'
+        ? 'Set as a book would: hairline rules and small caps, no colour.'
+        : 'Coloured cards that stand out from the text.' }),
     ),
   );
 }
@@ -157,7 +177,20 @@ function fontStack(id) {
 /* ---------------- layout ---------------- */
 
 function layoutTab(root) {
-  root.append(
+  add(root,
+    el('div', { class: 'group' },
+      el('h4', { text: 'How it reads' }),
+      optionRow('Flow', [
+        { id: 'scroll', name: 'Scroll' },
+        { id: 'paged', name: 'Pages' },
+        { id: 'book', name: 'Book' },
+      ], S('flow'), v => set({ flow: v })),
+      el('p', { class: 'hint', text: S('flow') === 'scroll'
+        ? 'One continuous page, the way a web page reads.'
+        : S('flow') === 'paged'
+          ? 'One page at a time. Turn with the arrow keys, by clicking either edge, or by swiping.'
+          : 'Two pages side by side, like an open book. Falls back to one page on a phone.' }),
+    ),
     el('div', { class: 'group' },
       el('h4', { text: 'Shape' }),
       sliderRow('Corner radius', { min: 0, max: 26, step: 1, value: S('radius'), format: v => v + ' px', onInput: v => set({ radius: v }) }).node,

@@ -143,12 +143,14 @@
       </aside>
 
       <main class="read-main" id="read-main">
+        <div class="page-frame" id="page-frame">
         <article class="paper" id="paper">
           <header class="paper-head" id="paper-head"></header>
           <div class="prose" id="prose"></div>
           <nav class="paper-next" id="paper-next" hidden></nav>
           <footer class="paper-foot" id="paper-foot"></footer>
         </article>
+        </div>
       </main>
 
       <aside class="notes-panel" id="notes-panel" aria-label="Highlights and notes">
@@ -159,6 +161,10 @@
         <div class="hl-filter" id="hl-filter"></div>
         <div class="hl-list" id="hl-list"></div>
       </aside>
+
+      <button class="turner turner-prev" id="turn-prev" data-icon="back" aria-label="Previous page"></button>
+      <button class="turner turner-next" id="turn-next" data-icon="fwd" aria-label="Next page"></button>
+      <div class="page-count" id="page-count" aria-live="polite"></div>
 
       <div class="panel-scrim" id="panel-scrim" aria-hidden="true"></div>
     </div>

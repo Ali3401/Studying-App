@@ -273,6 +273,10 @@ function wireShortcuts() {
       if (e.key.toLowerCase() === 'n' && k.hasSelection()) { e.preventDefault(); k.note(); return; }
       if (e.key.toLowerCase() === 'c' && k.hasSelection()) { e.preventDefault(); k.card(); return; }
       if ((e.key === 'Backspace' || e.key === 'Delete') && k.hasSelection()) { e.preventDefault(); k.clear(); return; }
+      if (e.key === 'ArrowRight' && k.turn(1)) { e.preventDefault(); return; }
+      if (e.key === 'ArrowLeft' && k.turn(-1)) { e.preventDefault(); return; }
+      if (e.key === 'PageDown' && k.turn(1)) { e.preventDefault(); return; }
+      if (e.key === 'PageUp' && k.turn(-1)) { e.preventDefault(); return; }
       if (e.key === '[') { e.preventDefault(); k.step(-1); return; }
       if (e.key === ']') { e.preventDefault(); k.step(1); return; }
       if (e.key.toLowerCase() === 'f') { e.preventDefault(); k.focus(); return; }

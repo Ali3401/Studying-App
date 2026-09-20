@@ -11,7 +11,30 @@ export const THEMES = [
   { id: 'forest',   name: 'Forest',   dark: true,  bg: '#0f1613', ink: '#e7f0ea', line: '#27352d' },
   { id: 'paper',    name: 'Paper',    dark: false, bg: '#f4f5f7', ink: '#171a20', line: '#e0e4ea' },
   { id: 'sepia',    name: 'Sepia',    dark: false, bg: '#efe7d8', ink: '#2f2a22', line: '#ddd2bb' },
+  { id: 'book',     name: 'Book',     dark: false, bg: '#d9d2c5', ink: '#241f1a', line: '#ded5c5' },
   { id: 'contrast', name: 'Contrast', dark: true,  bg: '#000000', ink: '#ffffff', line: '#4a4a4a' },
+];
+
+/** One tap to change how the whole thing reads, not just its colours. */
+export const PRESETS = [
+  {
+    id: 'lucid', name: 'Lucid', hint: 'The default — a calm screen, one continuous page.',
+    values: { theme: 'midnight', font: 'editorial', flow: 'scroll', callouts: 'panel',
+      align: 'left', hyphens: false, paraIndent: 0, paraSpace: 1.15, headings: 'plain',
+      texture: 'plain', paper: 'flat', measure: 68, lineHeight: 1.7, accent: 'blue' },
+  },
+  {
+    id: 'book', name: 'Book', hint: 'A printed page: warm stock, two pages open, indented paragraphs.',
+    values: { theme: 'book', font: 'classic', flow: 'book', callouts: 'quiet',
+      align: 'justify', hyphens: true, paraIndent: 1.3, paraSpace: 0.15, headings: 'plain',
+      texture: 'plain', paper: 'flat', measure: 64, lineHeight: 1.62, accent: 'crimson' },
+  },
+  {
+    id: 'paper', name: 'Manuscript', hint: 'Daylight, one page at a time, plenty of air.',
+    values: { theme: 'paper', font: 'book', flow: 'paged', callouts: 'quiet',
+      align: 'left', hyphens: false, paraIndent: 0, paraSpace: 1.2, headings: 'rule',
+      texture: 'plain', paper: 'flat', measure: 66, lineHeight: 1.75, accent: 'slate' },
+  },
 ];
 
 export const ACCENTS = [
@@ -76,6 +99,8 @@ export const DEFAULTS = {
   hlAlpha: 0.30,
   images: 'shown',
   spotlight: 'off',
+  flow: 'scroll',        // scroll | paged | book
+  callouts: 'panel',     // panel | quiet
   libLayout: 'grid',
   libSort: 'updated',
   showOutline: true,
@@ -146,6 +171,8 @@ export function apply() {
   r.dataset.hlstyle = s.hlStyle;
   r.dataset.images = s.images;
   r.dataset.spotlight = s.spotlight;
+  r.dataset.flow = s.flow;
+  r.dataset.callouts = s.callouts;
 
   const st = r.style;
   st.setProperty('--font-scale', s.fontScale);

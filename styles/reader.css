@@ -97,10 +97,10 @@
   letter-spacing: var(--heading-tracking); line-height: 1.22; text-wrap: balance;
   scroll-margin-top: 90px; position: relative; text-align: left; text-indent: 0; hyphens: manual;
 }
-.prose h1 { font-size: var(--fs-h1); margin-top: calc(var(--para-space) * 2.3); }
-.prose h2 { font-size: var(--fs-h2); margin-top: calc(var(--para-space) * 2); padding-bottom: .3em; border-bottom: var(--border-w) solid var(--line-soft); }
-.prose h3 { font-size: var(--fs-h3); margin-top: calc(var(--para-space) * 1.7); }
-.prose h4 { font-size: var(--fs-h4); margin-top: calc(var(--para-space) * 1.4); color: var(--ink-2); text-transform: none; }
+.prose h1 { font-size: var(--fs-h1); margin-top: max(calc(var(--para-space) * 2.3), 1.5em); }
+.prose h2 { font-size: var(--fs-h2); margin-top: max(calc(var(--para-space) * 2), 1.4em); padding-bottom: .3em; border-bottom: var(--border-w) solid var(--line-soft); }
+.prose h3 { font-size: var(--fs-h3); margin-top: max(calc(var(--para-space) * 1.7), 1.3em); }
+.prose h4 { font-size: var(--fs-h4); margin-top: max(calc(var(--para-space) * 1.4), 1.15em); color: var(--ink-2); text-transform: none; }
 .prose h1:first-child, .prose h2:first-child, .prose h3:first-child { margin-top: 0; }
 
 [data-headings="accented"] .prose h2 { color: var(--accent-ink); }
@@ -225,6 +225,47 @@
 .deflist dt { font-weight: 680; color: var(--ink); font-family: var(--font-head); }
 .deflist dd { color: var(--ink-2); }
 
+/* ---------- callouts, set the way a book would ---------- */
+[data-callouts="quiet"] .callout {
+  background: none;
+  border: 0;
+  border-top: var(--border-w) solid var(--line);
+  border-bottom: var(--border-w) solid var(--line);
+  border-radius: 0;
+  padding: var(--gap-4) 0;
+  color: var(--ink-2);
+}
+[data-callouts="quiet"] .callout-head {
+  color: var(--ink-3);
+  font-family: var(--font-body);
+  font-weight: 620;
+  font-size: var(--fs-sm);
+  font-variant-caps: small-caps;
+  letter-spacing: .1em;
+  text-transform: lowercase;
+}
+[data-callouts="quiet"] .callout-head .i { display: none; }
+[data-callouts="quiet"] .callout[data-type="formula"] .f-body,
+[data-callouts="quiet"] .callout[data-type="definition"] .d-term { color: var(--ink); }
+[data-callouts="quiet"] .callout ul > li::before { background: var(--ink-4); }
+[data-callouts="quiet"] .callout ol > li::before { color: var(--ink-4); }
+[data-callouts="quiet"] .steps .step::before {
+  background: none; border: var(--border-w) solid var(--line); color: var(--ink-3);
+}
+[data-callouts="quiet"] .compare-col { background: none; border: 0; border-top: var(--border-w) solid var(--line); border-radius: 0; padding: var(--gap-3) 0 0; }
+[data-callouts="quiet"] .compare-col > h5 { color: var(--ink) !important; border-color: transparent !important; font-variant-caps: small-caps; letter-spacing: .06em; }
+[data-callouts="quiet"] .quiz { background: none; border: 0; border-top: var(--border-w) solid var(--line); border-radius: 0; }
+[data-callouts="quiet"] .quiz-q { padding-inline: 0; }
+[data-callouts="quiet"] .quiz-q .i[data-icon="help"] { display: none; }
+[data-callouts="quiet"] .quiz-a { padding-inline: 0; }
+[data-callouts="quiet"] .prose blockquote { border-left: 0; padding-left: 0; text-align: center; font-style: italic; color: var(--ink-3); }
+[data-callouts="quiet"] .prose hr { background: none; height: auto; text-align: center; color: var(--ink-4); letter-spacing: .6em; }
+[data-callouts="quiet"] .prose hr::before { content: "\2042"; }
+[data-callouts="quiet"] .prose h2 { border-bottom: 0; text-align: center; font-variant-caps: small-caps; letter-spacing: .04em; }
+[data-callouts="quiet"] .paper-title { text-align: center; }
+[data-callouts="quiet"] .paper-kicker { justify-content: center; }
+[data-callouts="quiet"] .paper-meta { justify-content: center; border-top: 0; }
+
 /* ---------- highlights ---------- */
 .hl {
   border-radius: 3px; padding: .08em 0; box-decoration-break: clone; -webkit-box-decoration-break: clone;
@@ -318,4 +359,125 @@
   .doc-bar-title { margin-left: var(--gap-1); }
   .doc-bar-r .btn-primary .lbl { display: none; }
   .doc-bar-r .btn-primary { width: var(--tap); padding: 0; }
+}
+
+/* ==========================================================================
+   Paged reading — one page at a time, or a two-page spread like a book.
+
+   The article itself becomes the multi-column box, so the title block, the
+   prose and the footer all flow through the same columns and the DOM never
+   changes. Turning a page is a translate.
+   ========================================================================== */
+
+[data-flow="paged"] .read-main,
+[data-flow="book"] .read-main {
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  scroll-behavior: auto;
+  background-color: var(--paper);
+}
+
+/* The frame is what clips: the page slides inside it, so neighbouring
+   columns can never appear in the margins beside a narrow page. */
+.page-frame { display: contents; }
+
+[data-flow="paged"] .page-frame,
+[data-flow="book"] .page-frame {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+}
+
+[data-flow="paged"] .paper,
+[data-flow="book"] .paper {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  max-width: none;          /* the base rule caps this at one measure */
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: var(--gap-6) var(--gap-5) var(--gap-5);
+  column-gap: var(--gap-7);
+  column-fill: auto;
+  transform: translateX(var(--page-x, 0px));
+  transition: transform var(--t-mid) var(--ease);
+  will-change: transform;
+}
+[data-flow="paged"] .paper.no-turn,
+[data-flow="book"] .paper.no-turn { transition: none; }
+
+/* a page is one measure wide; a spread is two of them plus the fold */
+[data-flow="paged"] .page-frame { width: min(calc(var(--measure) + var(--gap-6) * 2), 100%); }
+[data-flow="book"]  .page-frame { width: min(calc(var(--measure) * 2 + var(--gap-7) * 2), 100%); }
+[data-flow="paged"] .paper { column-count: 1; }
+[data-flow="book"]  .paper { column-count: 2; }
+
+/* the fold down the middle of an open book */
+[data-flow="book"] .read-main::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;
+  background: linear-gradient(transparent, var(--line) 12%, var(--line) 88%, transparent);
+  opacity: .55; pointer-events: none;
+}
+[data-flow="book"] .read-shell, [data-flow="paged"] .read-shell { position: relative; }
+
+/* nothing may be orphaned across a page break */
+[data-flow="paged"] .prose h1, [data-flow="paged"] .prose h2,
+[data-flow="paged"] .prose h3, [data-flow="paged"] .prose h4,
+[data-flow="book"] .prose h1, [data-flow="book"] .prose h2,
+[data-flow="book"] .prose h3, [data-flow="book"] .prose h4 {
+  break-after: avoid-column;
+}
+[data-flow="paged"] .callout, [data-flow="paged"] .quiz, [data-flow="paged"] .compare,
+[data-flow="paged"] .prose figure, [data-flow="paged"] .prose pre, [data-flow="paged"] .prose table,
+[data-flow="book"] .callout, [data-flow="book"] .quiz, [data-flow="book"] .compare,
+[data-flow="book"] .prose figure, [data-flow="book"] .prose pre, [data-flow="book"] .prose table {
+  break-inside: avoid-column;
+}
+[data-flow="paged"] .prose figure img,
+[data-flow="book"] .prose figure img { max-height: 58vh; }
+[data-flow="paged"] .paper-head, [data-flow="book"] .paper-head { break-after: avoid-column; }
+[data-flow="paged"] .paper-next, [data-flow="book"] .paper-next { break-before: column; }
+
+/* the reading-progress bar has nothing to measure when there is no scrolling */
+[data-flow="paged"] .read-progress, [data-flow="book"] .read-progress { display: none; }
+
+/* ---------- page turning ---------- */
+.turner { display: none; }
+[data-flow="paged"] .turner, [data-flow="book"] .turner {
+  display: block; position: absolute; top: 0; bottom: 0; width: clamp(48px, 9%, 120px);
+  z-index: 12; border: 0; background: transparent; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.turner-prev { left: 0; }
+.turner-next { right: 0; }
+.turner::after {
+  content: ""; position: absolute; top: 50%; left: 50%; width: 30px; height: 30px;
+  transform: translate(-50%, -50%); opacity: 0; transition: opacity var(--t-fast) var(--ease);
+  background: var(--ink-3);
+  -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat;
+}
+.turner:hover::after { opacity: .75; }
+.turner[disabled] { cursor: default; }
+.turner[disabled]::after { opacity: 0 !important; }
+
+.page-probe { display: block; width: 0; height: 1px; margin: 0; }
+
+.page-count {
+  display: none; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 12; color: var(--ink-4); font-size: var(--fs-xs); font-variant-numeric: tabular-nums;
+  letter-spacing: .04em; pointer-events: none;
+}
+[data-flow="paged"] .page-count, [data-flow="book"] .page-probe { display: block; width: 0; height: 1px; margin: 0; }
+
+.page-count { display: block; }
+
+@media (max-width: 720px) {
+  /* a phone has no room for a spread */
+  [data-flow="book"] .page-frame { width: min(calc(var(--measure) + var(--gap-7) * 2), 100%); }
+  [data-flow="book"] .paper { column-count: 1; }
+  [data-flow="book"] .read-main::after { display: none; }
+  [data-flow="paged"] .paper, [data-flow="book"] .paper { padding: var(--gap-5) var(--gap-4) var(--gap-6); }
+  [data-flow="paged"] .turner, [data-flow="book"] .turner { width: 22%; }
 }

@@ -173,6 +173,20 @@
   --glow: 0 0 0 1px var(--accent-line), 0 8px 30px -8px hsl(var(--accent-h) 70% 45% / .35);
 }
 
+/* Book — a printed page: warm stock, brown-black ink, nothing glowing */
+[data-theme="book"] {
+  color-scheme: light;
+  --bg: #d9d2c5; --bg-2: #d2cabb; --bg-3: #c9c0b0;
+  --surface: #fbf7f0; --surface-2: #f4efe5; --surface-hi: #ebe4d7;
+  --paper: #fdfaf4;
+  --line: #ded5c5; --line-soft: #e9e2d5;
+  --ink: #241f1a; --ink-2: #3d362e; --ink-3: #6b6156; --ink-4: #928778;
+  --shadow: 0 1px 2px rgb(90 70 40 / .07), 0 14px 34px -18px rgb(90 70 40 / .3);
+  --glow: 0 0 0 1px var(--accent-line);
+  --hl-alpha: .30;
+}
+[data-theme="book"] { --accent-l: 42%; --accent-ink: hsl(var(--accent-h) 55% 28%); }
+
 /* Contrast — maximum legibility */
 [data-theme="contrast"] {
   color-scheme: dark;
@@ -243,6 +257,12 @@
   --font-head: var(--font-mono);
   --heading-tracking: -0.01em;
 }
+
+/* ===================== CALLOUT TREATMENT ===================== */
+/* "panel" is the default: a tinted, rounded card.
+   "quiet" is how a printed book would set the same material — rules and
+   small caps, no fill, no colour beyond the ink. */
+[data-callouts="quiet"] { --callout-fill: transparent; }
 
 /* ===================== PAGE TEXTURE ===================== */
 [data-texture="plain"]  { --texture: none; }
