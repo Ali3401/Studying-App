@@ -174,10 +174,9 @@ const dayBefore = (iso, n = 1) => {
  * Consecutive days ending today, or ending yesterday — a streak you have not
  * broken yet, just not continued. Returns 0 once a day has been missed.
  */
-export function streak() {
-  const days = new Set(settings.get('studyDays') || []);
+export function streak(history = settings.get('studyDays'), today = todayStr()) {
+  const days = new Set(history || []);
   if (!days.size) return { days: 0, today: false };
-  const today = todayStr();
   const studiedToday = days.has(today);
   let cursor = studiedToday ? today : dayBefore(today);
   if (!days.has(cursor)) return { days: 0, today: false };

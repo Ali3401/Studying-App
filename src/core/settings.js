@@ -96,7 +96,7 @@ const listeners = new Set();
 
 export function load() {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(KEY);
     if (raw) current = { ...DEFAULTS, ...JSON.parse(raw) };
   } catch { /* keep defaults */ }
   return current;
@@ -122,7 +122,9 @@ export function reset() {
 
 export function onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
-const mql = window.matchMedia('(prefers-color-scheme: dark)');
+const mql = (typeof window !== 'undefined' && window.matchMedia)
+  ? window.matchMedia('(prefers-color-scheme: dark)')
+  : { matches: false, addEventListener() {} };
 
 export function resolvedTheme() {
   if (current.autoTheme) return mql.matches ? current.darkTheme : current.lightTheme;
@@ -130,6 +132,7 @@ export function resolvedTheme() {
 }
 
 export function apply() {
+  if (typeof document === 'undefined') return;
   const r = document.documentElement;
   const s = current;
   const theme = resolvedTheme();

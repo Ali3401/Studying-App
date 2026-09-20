@@ -10,7 +10,7 @@ Working notes so any session can pick this up cold. Newest status at the top.
 
 Every feature the brief asked for is built, tested in a real browser
 (Chromium via Playwright at desktop, iPad portrait/landscape and iPhone sizes),
-and pushed. `node tools/selftest.mjs` passes 75/75.
+and pushed. `node tools/selftest.mjs` passes 107/107.
 
 ### What exists
 

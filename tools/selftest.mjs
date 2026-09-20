@@ -5,6 +5,9 @@ import { parse, inline, plain, quizItems, splitFrontmatter, buildFrontmatter } f
 import { render, textOf, excerpt } from '../src/parse/render.js';
 import { tidy, typography, unwrap, repairHyphens, normaliseBullets, detectQuiz, detectCallouts, guessTitle, guessSubject } from '../src/import/tidy.js';
 import { SAMPLE, WELCOME } from '../src/core/sample.js';
+import { fmtUntil, naturalCompare, countWords, fuzzy, slug } from '../src/core/util.js';
+import { fingerprint } from '../src/core/store.js';
+import { streak } from '../src/views/study.js';
 
 let pass = 0, fail = 0;
 const ok = (name, cond, extra = '') => {
@@ -159,6 +162,66 @@ ok('subject guessed from filename', guessSubject('PHYS-201 lecture 4.pdf') === '
   ok('tidy output still parses to the same block count',
      parse(round).blocks.length === parse(SAMPLE).blocks.length,
      `${parse(round).blocks.length} vs ${parse(SAMPLE).blocks.length}`);
+}
+
+/* ---------- helpers ---------- */
+group('helpers');
+{
+  const H = 3600e3, D = 86400e3;
+  const at = (ms) => fmtUntil(Date.now() + ms);
+  ok('a moment', at(30e3) === 'in a moment');
+  ok('minutes', at(20 * 60e3) === 'in 20 minutes');
+  ok('hours', at(3 * H) === 'in 3 hours');
+  ok('tomorrow', at(D) === 'tomorrow');
+  ok('days', at(3 * D) === 'in 3 days');
+  ok('weeks', at(10 * D) === 'in 1 week');
+  ok('months', at(40 * D) === 'in 1 month');
+  ok('the past is now', fmtUntil(Date.now() - 5000) === 'now');
+  ok('nothing is soon', fmtUntil(0) === 'soon');
+}
+{
+  const titles = ['Lecture 10', 'Lecture 2', 'Lecture 1', 'Appendix'].sort(naturalCompare);
+  ok('natural order', titles.join('|') === 'Appendix|Lecture 1|Lecture 2|Lecture 10', titles.join('|'));
+  ok('case insensitive', naturalCompare('apple', 'Apple') === 0);
+}
+ok('word count ignores punctuation', countWords('one, two; three — four!') === 4);
+ok("word count keeps contractions whole", countWords("it's fine") === 2);
+ok('fuzzy prefers a direct hit', fuzzy('card', 'cardiac') > fuzzy('card', 'crazy antidote rodeo'));
+ok('fuzzy rejects a miss', fuzzy('zzz', 'cardiac') === -1);
+ok('slug', slug('The Cardiac Cycle!') === 'the-cardiac-cycle');
+ok('slug of nothing', slug('!!!') === 'section');
+
+/* ---------- duplicates ---------- */
+group('duplicate detection');
+{
+  const a = fingerprint(SAMPLE);
+  ok('fingerprint has a head', a.head.length > 120);
+  ok('fingerprint is stable', fingerprint(SAMPLE).head === a.head);
+  ok('front matter does not count', fingerprint(SAMPLE).head === fingerprint(SAMPLE.replace('subject: Physiology', 'subject: Anatomy')).head);
+  ok('punctuation does not count', fingerprint('Hello, world. This is a note about the kidney and how it works in practice, at length.').head
+     === fingerprint('Hello world This is a note about the kidney and how it works in practice at length').head);
+  ok('different text differs', fingerprint('The bicycle in Denmark').head !== a.head);
+  ok('a short note has no usable head', fingerprint('Tiny.').head.length < 120);
+}
+
+/* ---------- streak ---------- */
+group('streak');
+{
+  const iso = (n, from = '2026-06-15') => {
+    const d = new Date(from + 'T12:00:00');
+    d.setDate(d.getDate() - n);
+    return d.toISOString().slice(0, 10);
+  };
+  const today = '2026-06-15';
+  ok('no history', streak([], today).days === 0);
+  ok('only today', streak([iso(0)], today).days === 1);
+  ok('five in a row', streak([iso(4), iso(3), iso(2), iso(1), iso(0)], today).days === 5);
+  ok('ended yesterday still counts', streak([iso(3), iso(2), iso(1)], today).days === 3);
+  ok('and knows today is not done', streak([iso(3), iso(2), iso(1)], today).today === false);
+  ok('a missed day resets', streak([iso(5), iso(4), iso(3)], today).days === 0);
+  ok('a gap earlier is ignored', streak([iso(30), iso(2), iso(1), iso(0)], today).days === 3);
+  ok('unsorted history is fine', streak([iso(1), iso(0), iso(2)], today).days === 3);
+  ok('crossing a month boundary', streak(['2026-06-01', '2026-05-31', '2026-05-30'], '2026-06-01').days === 3);
 }
 
 /* ---------- report ---------- */
