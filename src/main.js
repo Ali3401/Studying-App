@@ -330,10 +330,16 @@ function offerBackupIfDue() {
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol === 'file:') return;
-  addEventListener('load', () => {
+
+  const register = () => {
     navigator.serviceWorker.register(new URL('../sw.js', import.meta.url), { scope: './' })
       .catch(err => console.warn('[lucid] offline support unavailable', err));
-  });
+  };
+
+  // boot() finishes after the load event has already fired, so waiting for it
+  // means waiting forever — which is why this never registered at all
+  if (document.readyState === 'complete') register();
+  else addEventListener('load', register, { once: true });
 }
 
 boot().catch(err => {

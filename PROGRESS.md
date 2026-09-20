@@ -51,28 +51,25 @@ font tables. The script rewrites each as `\xNN`, which the JS parser treats
 identically — verified by running the PDF and PowerPoint import tests against
 the escaped copies. The vendored originals stay byte-identical to npm.
 
-### Deploying to GitHub Pages — blocked on two settings
+### Live on GitHub Pages ✅
 
-**The repository is private, and GitHub Pages on a private repo needs a paid
-plan.** Making the repo public is the free route and costs nothing in privacy:
-notes live in the browser and are never in the repo.
+**https://ali3401.github.io/Studying-App/** — the repository was made public
+and Pages switched on, and every push now deploys automatically from
+`claude/study-notes-display-app-2x6rkg` (which is the default branch, so no
+merge is needed).
 
-The default branch is `claude/study-notes-display-app-2x6rkg`, so no merge is
-needed — Pages will build straight from it.
+Note that it is served from a **sub-path**, `/Studying-App/`. Every reference
+in the app is relative for that reason — `./src/main.js`, `../sw.js` through
+`import.meta.url`, `scope: './'` — so nothing may be rewritten to a
+root-absolute path without breaking the deployment. There is a sub-path test
+harness: copy the repo to `/tmp/pagesim/Studying-App`, serve `/tmp/pagesim`,
+and load `http://127.0.0.1:8788/Studying-App/`. It catches exactly this.
 
-`.github/workflows/pages.yml` runs the self test (passing) then publishes to
-GitHub Pages. **The deploy job fails until Pages is switched on**, and a
-workflow cannot switch it on itself: the token comes back
-`Resource not accessible by integration` from the create-Pages-site API. This
-was tried with `configure-pages`' `enablement: true` and refused.
-
-So, in order: Settings → General → Change visibility → **Public**; then
-Settings → Pages → Source: **GitHub Actions**; then re-run the workflow. It
-now checks for this first and fails with a titled error saying exactly that,
-instead of the opaque "Get Pages site failed".
-
-Once it is on, the site lands at https://ali3401.github.io/Studying-App/ and
-every push redeploys it.
+`.github/workflows/pages.yml` runs the self test, then publishes. It keeps a
+guard step that checks Pages is switched on and fails with a readable message
+if it is not, because a workflow token cannot enable Pages itself — the
+create-Pages-site API returns `Resource not accessible by integration`, with
+or without `configure-pages`' `enablement: true`.
 
 ---
 
@@ -150,6 +147,12 @@ every push redeploys it.
 19. **Heading levels came from absolute size ratios**, so a handout that
     separates headings by two points made everything an h4. Ranked by size
     around the *heaviest* heading size instead.
+21. **The service worker never registered, so offline never worked.**
+    Registration was deferred with `addEventListener('load', …)`, but `boot()`
+    is async and finishes *after* the load event has already fired, so the
+    listener was attached to an event that would never come again. It now
+    checks `document.readyState` first. Verified by disabling the network and
+    reloading: 44 files cached, app still opens.
 20. **`imgDraws` is not a "has a diagram" signal.** PowerPoint renders
     gradients, shadows and its own bullets as images, so an ordinary text
     slide drew 69 of them while a real graph drew 2. Judging a page by the

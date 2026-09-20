@@ -98,15 +98,21 @@ modules and IndexedDB on `file://`, so use a server.
 The repository ships a GitHub Actions workflow that runs the tests and
 publishes the site to GitHub Pages on every push.
 
-**One manual step is needed first**, because a workflow is not allowed to
-switch Pages on for a repository:
+It is already running at **https://ali3401.github.io/Studying-App/**, and every
+push redeploys it.
 
-1. **Settings → Pages → Build and deployment → Source: GitHub Actions**
-2. Re-run the latest workflow (or push anything). It deploys by itself from
-   then on.
-3. Open `https://ali3401.github.io/Studying-App/` on your iPad.
-4. Share → **Add to Home Screen**. Do this — it is also what persuades Safari
-   to stop clearing your notes to reclaim space.
+On your iPad: open that link, then Share → **Add to Home Screen**. Do the
+second part — it is also what persuades Safari to stop clearing your notes to
+reclaim space.
+
+Setting this up on a fork takes two settings, because a workflow is not
+allowed to switch Pages on for itself:
+
+1. The repository must be **public** (GitHub Pages on a private repo needs a
+   paid plan).
+2. **Settings → Pages → Build and deployment → Source: GitHub Actions**
+
+The workflow checks for this and says so plainly if it is missing.
 
 Any static host works just as well — Netlify, Vercel, Cloudflare Pages, or a
 folder on a web server. There is no backend to deploy.
