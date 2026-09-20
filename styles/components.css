@@ -105,6 +105,12 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .chip .n { color: var(--ink-4); font-variant-numeric: tabular-nums; font-size: .9em; }
 .chip.is-on .n { color: inherit; opacity: .7; }
 .tag { display: inline-flex; align-items: center; height: 21px; padding: 0 8px; border-radius: 6px; background: var(--surface-hi); color: var(--ink-3); font-size: var(--fs-xs); font-weight: 600; letter-spacing: .01em; }
+.tag-btn { cursor: pointer; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+.tag-btn:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.tag-btn.is-on { background: var(--accent); color: var(--on-accent); }
+.chip-tag { height: 27px; font-size: var(--fs-xs); }
+.chip-clear { height: 27px; font-size: var(--fs-xs); color: var(--ink-4); border-style: dashed; }
+.chip-clear .i { width: .85em; height: .85em; }
 
 /* ---------- scrim, sheet, menu ---------- */
 .scrim { position: fixed; inset: 0; background: rgb(0 0 0 / .46); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 60; animation: fade var(--t-mid) var(--ease); }

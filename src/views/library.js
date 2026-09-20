@@ -7,6 +7,7 @@ import { menu, toast, confirmDialog } from '../ui/ui.js';
 import { go } from '../core/router.js';
 
 let filterSubject = '';
+let filterTags = new Set();
 let query = '';
 let bound = false;
 let actions = {};
@@ -49,6 +50,11 @@ function bind() {
 
 export function setQuery(q) { query = q; const i = $('#lib-search'); if (i) i.value = q; render(); }
 export function setSubject(s) { filterSubject = s; render(); }
+export function toggleTag(t) {
+  filterTags.has(t) ? filterTags.delete(t) : filterTags.add(t);
+  render();
+}
+const clearFilters = () => { query = ''; filterSubject = ''; filterTags.clear(); const i = $('#lib-search'); if (i) i.value = ''; render(); };
 
 function sortDocs(list) {
   const how = settings.get('libSort');
@@ -96,8 +102,32 @@ export function render() {
     }
   }
 
-  const list = sortDocs(allDocs.filter(d =>
-    (!filterSubject || d.subject === filterSubject) && matches(d, query)));
+  const inSubject = allDocs.filter(d => !filterSubject || d.subject === filterSubject);
+
+  // tag chips, for whatever subject is in view
+  const tagCounts = new Map();
+  for (const d of inSubject) for (const t of d.tags || []) tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+  for (const t of filterTags) if (!tagCounts.has(t)) tagCounts.set(t, 0);
+  const tags = Array.from(tagCounts, ([name, n]) => ({ name, n }))
+    .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+
+  const tagRow = $('#lib-tags');
+  tagRow.innerHTML = '';
+  tagRow.hidden = tags.length < 2;
+  for (const t of tags.slice(0, 14)) {
+    tagRow.append(el('button', {
+      class: 'chip chip-tag' + (filterTags.has(t.name) ? ' is-on' : ''),
+      onclick: () => toggleTag(t.name),
+    }, el('span', { text: '#' + t.name }), el('span', { class: 'n', text: String(t.n) })));
+  }
+  if (filterTags.size) {
+    tagRow.append(el('button', {
+      class: 'chip chip-clear', onclick: () => { filterTags.clear(); render(); },
+    }, el('span', { class: 'i', dataset: { icon: 'x' } }), el('span', { text: 'Clear tags' })));
+  }
+
+  const list = sortDocs(inSubject.filter(d =>
+    (!filterTags.size || [...filterTags].every(t => (d.tags || []).includes(t))) && matches(d, query)));
 
   // header stats
   const words = allDocs.reduce((n, d) => n + store.derived(d).words, 0);
@@ -121,9 +151,13 @@ export function render() {
   if (allDocs.length && !list.length) {
     wrap.append(el('div', { class: 'lib-empty', style: { gridColumn: '1/-1' } },
       el('h2', { text: 'No matches' }),
-      el('p', { text: query ? `Nothing here contains “${query}”.` : 'Nothing in this subject yet.' }),
+      el('p', { text: query
+        ? `Nothing here contains “${query}”.`
+        : filterTags.size
+          ? `Nothing is tagged ${[...filterTags].map(t => '#' + t).join(' and ')}.`
+          : 'Nothing in this subject yet.' }),
       el('div', { class: 'empty-actions' },
-        el('button', { class: 'btn btn-outline', text: 'Clear filters', onclick: () => { query = ''; filterSubject = ''; $('#lib-search').value = ''; render(); } }))));
+        el('button', { class: 'btn btn-outline', text: 'Clear filters', onclick: clearFilters }))));
     return;
   }
 
@@ -170,8 +204,14 @@ function card(doc) {
     d.excerpt ? el('p', { class: 'ncard-excerpt', text: d.excerpt }) : null,
     (doc.subject || doc.tags?.length)
       ? el('div', { class: 'ncard-tags' },
-          doc.subject ? el('span', { class: 'tag', text: doc.subject }) : null,
-          ...(doc.tags || []).slice(0, 3).map(t => el('span', { class: 'tag', text: '#' + t })))
+          doc.subject
+            ? el('button', { class: 'tag tag-btn', title: `Only ${doc.subject}`, text: doc.subject,
+                onclick: (e) => { e.stopPropagation(); filterSubject = filterSubject === doc.subject ? '' : doc.subject; render(); } })
+            : null,
+          ...(doc.tags || []).slice(0, 4).map(t => el('button', {
+            class: 'tag tag-btn' + (filterTags.has(t) ? ' is-on' : ''), title: `Filter by #${t}`, text: '#' + t,
+            onclick: (e) => { e.stopPropagation(); toggleTag(t); },
+          })))
       : null,
     el('div', { class: 'ncard-foot' },
       el('span', { text: `${readTime(wordCount)} min` }),

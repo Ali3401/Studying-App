@@ -126,8 +126,9 @@ Ordered by how much they actually matter to someone using this to study.
    adding to the Home Screen is what wins it on Safari.
 2. ~~**Backup nudge.**~~ Done — a toast offers a one-tap export once there are
    3+ notes and it has been two weeks, at most once every three days.
-3. **Tag filtering.** Tags render on cards but do nothing. Make them
-   clickable, and add them to the subject chip row.
+3. ~~**Tag filtering.**~~ Done — a tag row under the subjects, scoped to the
+   subject in view; tags on the cards are buttons too; multiple tags narrow
+   (AND), and the empty state names what it looked for.
 4. **Next / previous note in the reader.** Reaching the end of a note should
    offer the next one in the same subject.
 5. **Study a single subject**, not just one note or everything.
