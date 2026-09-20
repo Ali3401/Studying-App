@@ -1,10 +1,11 @@
 /* Lucid — the Appearance & settings sheet. Everything applies live. */
 
-import { $, $$, el, fmtBytes, downloadText, downloadBlob, mod, pluralize } from '../core/util.js';
+import { $, $$, el, fmtBytes, fmtDate, downloadText, downloadBlob, mod, pluralize } from '../core/util.js';
 import * as settings from '../core/settings.js';
 import * as store from '../core/store.js';
 import { sheet, closeSheet, toast, confirmDialog, sliderRow, toggleRow, optionRow, row } from './ui.js';
 import { SAMPLE, WELCOME } from '../core/sample.js';
+import * as safety from '../core/safety.js';
 
 let tab = 'theme';
 let rerender = () => {};
@@ -202,12 +203,22 @@ async function dataTab(root) {
   );
 
   const usage = el('div', { class: 'stack' });
-  store.storageEstimate().then(({ usage: u, quota }) => {
+  safety.storageSummary().then(({ usage: u, quota, persisted, lastExport }) => {
     usage.innerHTML = '';
     const pct = quota ? Math.min(100, (u / quota) * 100) : 0;
     usage.append(
       el('div', { class: 'storage-bar' }, el('i', { class: 's-docs', style: { width: pct + '%' } })),
       el('p', { class: 'hint', text: quota ? `${fmtBytes(u)} used of about ${fmtBytes(quota)} available in this browser.` : `${fmtBytes(u)} used.` }),
+      el('div', { class: 'row' },
+        el('span', { text: 'Protected from clean-up' }),
+        el('span', { class: 'val', style: { color: persisted ? 'hsl(150 60% 50%)' : 'var(--ink-4)' },
+          text: persisted === null ? 'unknown' : persisted ? 'yes' : 'not yet' })),
+      el('p', { class: 'hint', text: persisted
+        ? 'The browser has promised not to clear these notes to reclaim space.'
+        : 'Add Lucid to your Home Screen and the browser will stop clearing it to reclaim space. Until then, keep a backup.' }),
+      el('div', { class: 'row' },
+        el('span', { text: 'Last backup' }),
+        el('span', { class: 'val', text: lastExport ? fmtDate(lastExport) : 'never' })),
     );
   });
 
@@ -259,10 +270,9 @@ async function dataTab(root) {
 
 async function doExport() {
   toast('Packing everything up…', { icon: 'download', ms: 1500 });
-  const data = await store.exportBackup();
-  const name = `lucid-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  downloadBlob(new Blob([JSON.stringify(data)], { type: 'application/json' }), name);
-  toast(`Exported ${pluralize(data.docs.length, 'note')}`, { icon: 'check' });
+  const res = await safety.exportBackup();
+  toast(`Exported ${pluralize(res.docs, 'note')}`, { icon: 'check' });
+  rerender();
 }
 
 function doImport() {

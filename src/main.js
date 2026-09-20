@@ -16,6 +16,7 @@ import * as study from './views/study.js';
 import * as importer from './views/importer.js';
 import * as guide from './views/guide.js';
 import { WELCOME } from './core/sample.js';
+import * as safety from './core/safety.js';
 
 window.__lucidHL = HL;   // used by the offline HTML exporter
 
@@ -58,6 +59,8 @@ async function boot() {
   setTimeout(() => splash.remove(), 400);
 
   registerSW();
+  safety.requestPersistence();
+  setTimeout(offerBackupIfDue, 3500);
 }
 
 /* ---------------- global actions ---------------- */
@@ -259,6 +262,29 @@ function wireShortcuts() {
     if (router.current().name !== 'editor') return;
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); editor.keys.done(); }
   });
+}
+
+/* ---------------- keeping the notes safe ---------------- */
+
+function offerBackupIfDue() {
+  const due = safety.backupDue();
+  if (!due) return;
+  safety.nudgeShown();
+  toast(
+    due.never
+      ? `You have ${due.docs} notes here and no backup yet.`
+      : `Your last backup was ${due.days} days ago.`,
+    {
+      icon: 'download', kind: 'warn', ms: 14000,
+      action: {
+        label: 'Back up now',
+        fn: async () => {
+          const res = await safety.exportBackup();
+          toast(`Saved ${res.docs} notes`, { icon: 'check' });
+        },
+      },
+    },
+  );
 }
 
 /* ---------------- service worker ---------------- */

@@ -84,6 +84,9 @@ export const DEFAULTS = {
   edSplit: 1,
   lastSubject: '',
   seenWelcome: false,
+  lastExport: 0,
+  lastBackupNudge: 0,
+  persisted: null,
 };
 
 let current = { ...DEFAULTS };

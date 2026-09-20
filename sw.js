@@ -24,6 +24,7 @@ const CORE = [
   './src/core/highlights.js',
   './src/core/prompt.js',
   './src/core/sample.js',
+  './src/core/safety.js',
   './src/parse/lmd.js',
   './src/parse/render.js',
   './src/ui/ui.js',

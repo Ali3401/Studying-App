@@ -121,21 +121,21 @@ workflow cannot enable it.
 
 Ordered by how much they actually matter to someone using this to study.
 
-1. **Ask for persistent storage.** `navigator.storage.persist()`. Without it
-   Safari can evict IndexedDB after a few weeks of not opening the site, and
-   the notes are simply gone. Highest-value item here. — **done**
-2. **Backup nudge.** Track the last export date; if it is more than ~14 days
-   old and there are notes worth losing, offer a one-tap export. — **done**
+1. ~~**Ask for persistent storage.**~~ Done — `src/core/safety.js` asks at
+   boot; the Data panel reports whether it was granted and explains that
+   adding to the Home Screen is what wins it on Safari.
+2. ~~**Backup nudge.**~~ Done — a toast offers a one-tap export once there are
+   3+ notes and it has been two weeks, at most once every three days.
 3. **Tag filtering.** Tags render on cards but do nothing. Make them
-   clickable, and add them to the subject chip row. — **done**
+   clickable, and add them to the subject chip row.
 4. **Next / previous note in the reader.** Reaching the end of a note should
-   offer the next one in the same subject. — **done**
-5. **Study a single subject**, not just one note or everything. — **done**
-6. **Archive UI.** The `archived` flag exists with no way to set it. — **done**
+   offer the next one in the same subject.
+5. **Study a single subject**, not just one note or everything.
+6. **Archive UI.** The `archived` flag exists with no way to set it.
 7. **Focus handling in overlays.** Trap Tab inside the sheet and the palette,
-   and return focus to whatever opened them. — **done**
-8. **Study stats.** Cards due today, a streak, what is coming this week. — **done**
+   and return focus to whatever opened them.
+8. **Study stats.** Cards due today, a streak, what is coming this week.
 9. **Reader gestures.** Swipe from the left edge to open the outline on
-   iPad. — **done**
+   iPad.
 10. **Duplicate detection.** Warn before creating a second copy of a note that
-    was pasted twice. — **done**
+    was pasted twice.
