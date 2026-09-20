@@ -1,6 +1,6 @@
 /* Lucid — spaced repetition over ::: quiz blocks and cards made from highlights. */
 
-import { $, $$, el, add, shuffle, uid, pluralize, fmtDate } from '../core/util.js';
+import { $, $$, el, add, shuffle, uid, pluralize, fmtUntil, todayStr } from '../core/util.js';
 import * as store from '../core/store.js';
 import * as settings from '../core/settings.js';
 import { inline } from '../parse/lmd.js';
@@ -99,13 +99,21 @@ function next(first = false) {
   $('#study-counter').textContent = done || !total ? '' : `${Math.min(idx + 1, total)} / ${total}`;
 
   if (done) {
+    const held = scopedDocs().reduce((n, d) => n + (d.cards || []).length + pendingQuizCount(d), 0);
+    const nextUp = scopedDocs()
+      .flatMap(d => d.cards || [])
+      .map(c => c.due || 0)
+      .filter(d => d > Date.now())
+      .sort((a, b) => a - b)[0];
+    const here = scope ? 'this note' : subject || 'your library';
+
     const sub = total
       ? `${pluralize(stats.done, 'card')} reviewed${stats.again ? `, ${stats.again} to see again` : ''}. Nice.`
-      : scope
-        ? 'This note has no cards yet. Add a ::: quiz block, or highlight something and turn it into a card.'
-        : subject
-          ? `Nothing is due in ${subject} right now. Come back later, or study it all anyway.`
-          : 'No cards are due right now. Come back later, or study everything anyway.';
+      : held
+        ? `Nothing is due in ${here} right now${nextUp ? ` — the next card comes back ${fmtUntil(nextUp)}` : ''}.`
+        : scope
+          ? 'This note has no cards yet. Add a ::: quiz block, or highlight something and turn it into a card.'
+          : `Nothing in ${here} has cards yet. Add a ::: quiz block to a note, or highlight something and turn it into a card.`;
     $('#study-title').textContent = scopeName();
     $('#study-done-sub').textContent = sub;
     const again = $('[data-act="study-again"]');
@@ -138,6 +146,48 @@ function reveal() {
   $('#flash-grades').hidden = false;
 }
 
+/* ---------------- streak ---------------- */
+
+const KEEP_DAYS = 400;
+
+/** Note that a card was graded today. */
+function recordReview() {
+  const today = todayStr();
+  const days = (settings.get('studyDays') || []).slice();
+  if (days[days.length - 1] !== today) days.push(today);
+  const counts = { ...(settings.get('reviewCounts') || {}) };
+  counts[today] = (counts[today] || 0) + 1;
+
+  // keep it bounded
+  const trimmed = days.slice(-KEEP_DAYS);
+  for (const k of Object.keys(counts)) if (!trimmed.includes(k)) delete counts[k];
+  settings.set({ studyDays: trimmed, reviewCounts: counts }, true);
+}
+
+const dayBefore = (iso, n = 1) => {
+  const d = new Date(iso + 'T12:00:00');
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+};
+
+/**
+ * Consecutive days ending today, or ending yesterday — a streak you have not
+ * broken yet, just not continued. Returns 0 once a day has been missed.
+ */
+export function streak() {
+  const days = new Set(settings.get('studyDays') || []);
+  if (!days.size) return { days: 0, today: false };
+  const today = todayStr();
+  const studiedToday = days.has(today);
+  let cursor = studiedToday ? today : dayBefore(today);
+  if (!days.has(cursor)) return { days: 0, today: false };
+  let n = 0;
+  while (days.has(cursor)) { n++; cursor = dayBefore(cursor); }
+  return { days: n, today: studiedToday };
+}
+
+export const reviewedToday = () => (settings.get('reviewCounts') || {})[todayStr()] || 0;
+
 /** What is waiting after this session — the whole library, not just the scope. */
 function renderUpNext() {
   const wrap = $('#study-upnext');
@@ -151,13 +201,20 @@ function renderUpNext() {
   if (!total) { wrap.hidden = true; return; }
   wrap.hidden = false;
 
+  const run = streak();
   add(wrap,
     el('div', { class: 'stat-grid' },
       el('div', { class: 'stat' }, el('b', { text: String(due) }), el('span', { text: 'due now' })),
       el('div', { class: 'stat' }, el('b', { text: String(soon) }), el('span', { text: 'this week' })),
       el('div', { class: 'stat' }, el('b', { text: String(total) }), el('span', { text: 'cards in total' })),
+      run.days
+        ? el('div', { class: 'stat stat-streak' },
+            el('b', {}, el('span', { class: 'i', dataset: { icon: 'flame' } }), el('span', { text: String(run.days) })),
+            el('span', { text: run.days === 1 ? 'day' : 'days in a row' }))
+        : null,
     ),
-    next && !due ? el('p', { class: 'hint', style: { textAlign: 'center' }, text: `The next card comes back ${fmtDate(next).replace(/^just now$/, 'in a moment')}.` }) : null,
+    reviewedToday() ? el('p', { class: 'hint', style: { textAlign: 'center' }, text: `${pluralize(reviewedToday(), 'card')} reviewed today.` }) : null,
+    next && !due ? el('p', { class: 'hint', style: { textAlign: 'center' }, text: `The next card comes back ${fmtUntil(next)}.` }) : null,
   );
 
   const others = dueBySubject().filter(s => s.name !== subject);
@@ -205,6 +262,7 @@ function grade(q) {
   card.reviewedAt = now;
 
   store.saveSoon(doc);
+  recordReview();
   stats.done++;
   idx++;
   next();

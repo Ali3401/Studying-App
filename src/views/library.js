@@ -4,7 +4,7 @@ import { $, $$, el, fmtDate, countWords, readTime, norm, pluralize } from '../co
 import * as store from '../core/store.js';
 import * as settings from '../core/settings.js';
 import { menu, toast, confirmDialog } from '../ui/ui.js';
-import { dueBySubject, dueCountFor } from './study.js';
+import { dueBySubject, dueCountFor, streak } from './study.js';
 import { go } from '../core/router.js';
 
 let filterSubject = '';
@@ -151,12 +151,14 @@ export function render() {
   const hls = allDocs.reduce((n, d) => n + (d.highlights || []).length, 0);
   const due = dueCount(allDocs);
   $('#lib-greeting').textContent = showArchived ? 'Archived' : greeting();
+  const run = streak();
   $('#lib-stats').textContent = allDocs.length
     ? [
         pluralize(allDocs.length, 'note'),
         `${words.toLocaleString()} words`,
         hls ? pluralize(hls, 'highlight') : null,
         due ? `${due} card${due === 1 ? '' : 's'} due` : null,
+        run.days > 1 ? `${run.days}-day streak` : null,
       ].filter(Boolean).join(' · ')
     : 'Nothing saved yet — paste something in.';
 

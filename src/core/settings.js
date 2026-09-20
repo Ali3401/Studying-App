@@ -87,6 +87,8 @@ export const DEFAULTS = {
   lastExport: 0,
   lastBackupNudge: 0,
   persisted: null,
+  studyDays: [],      // ISO dates, most recent last
+  reviewCounts: {},   // ISO date -> cards graded
 };
 
 let current = { ...DEFAULTS };

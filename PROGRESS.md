@@ -99,6 +99,11 @@ workflow cannot enable it.
     `Element.append()` stringifies them, so a note with no subject or no
     quiz rendered the word "null". Use `add()` from `core/util.js` for any
     append with a conditional child.
+15. **`.stat span` styled the spans inside `<b>` too**, so the streak number
+    came out small and grey. Child selectors (`.stat > b`, `.stat > span`).
+16. **`fmtDate` called every future moment "just now"** — it measures elapsed
+    time, so a negative difference fell into the first branch. `fmtUntil()`
+    handles the other direction.
 14. **The paste handler could throw.** It called `e.target.closest(...)`,
     and a paste whose target is not an element (`window`, `document`) has no
     such method. Guarded.
@@ -133,7 +138,7 @@ workflow cannot enable it.
 
 ---
 
-## Polish list (work top-down, commit each one)
+## Polish list — all ten done
 
 Ordered by how much they actually matter to someone using this to study.
 
@@ -158,8 +163,9 @@ Ordered by how much they actually matter to someone using this to study.
 7. ~~**Focus handling in overlays.**~~ Done — `trapFocus()` in `ui/ui.js`
    keeps Tab inside the sheet, palette, menu and lightbox, and hands focus
    back to the opener. Menus take arrow keys too.
-8. **Study stats.** Partly done — the finished screen shows due now / this
-   week / total, and subject chips carry a due badge. A streak is still open.
+8. ~~**Study stats.**~~ Done — due now / this week / total, a day streak, how
+   many cards were reviewed today, and when the next one comes back. Subject
+   chips carry a due badge.
 9. ~~**Reader gestures.**~~ Done — swipe in from the left edge for the
    outline, from the right for the highlights, and swipe an open panel away.
    Touch only, and only when the panels float over the page.

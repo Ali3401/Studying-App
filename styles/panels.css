@@ -53,8 +53,10 @@
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--gap-2); }
 .stat { padding: var(--gap-3); border-radius: var(--radius-sm); background: var(--surface); border: var(--border-w) solid var(--line); text-align: center; }
-.stat b { display: block; font-size: var(--fs-h3); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.stat span { display: block; margin-top: 3px; font-size: var(--fs-xs); color: var(--ink-4); }
+.stat > b { display: block; font-size: var(--fs-h3); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.stat > span { display: block; margin-top: 3px; font-size: var(--fs-xs); color: var(--ink-4); }
+.stat-streak > b { display: inline-flex; align-items: center; justify-content: center; gap: 4px; color: hsl(28 92% 58%); }
+.stat-streak .i { width: .78em; height: .78em; }
 
 .file-pill { display: flex; align-items: center; gap: var(--gap-2); padding: var(--gap-2) var(--gap-3); border-radius: var(--radius-sm); background: var(--surface); border: var(--border-w) solid var(--line); font-size: var(--fs-sm); color: var(--ink-2); }
 .file-pill .i { color: var(--accent); }

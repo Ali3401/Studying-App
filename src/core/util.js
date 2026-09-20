@@ -84,6 +84,25 @@ export function fmtDate(ts) {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) });
 }
 
+/** How long until a future moment: "in 2 hours", "tomorrow", "in 3 weeks". */
+export function fmtUntil(ts) {
+  if (!ts) return 'soon';
+  const diff = ts - Date.now();
+  if (diff <= 0) return 'now';
+  const mins = diff / 60000;
+  if (mins < 2) return 'in a moment';
+  if (mins < 60) return `in ${Math.round(mins)} minutes`;
+  const hours = mins / 60;
+  if (hours < 24) return `in ${Math.round(hours)} hour${Math.round(hours) === 1 ? '' : 's'}`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return 'tomorrow';
+  if (days < 7) return `in ${days} days`;
+  const weeks = Math.round(days / 7);
+  if (weeks < 5) return `in ${weeks} week${weeks === 1 ? '' : 's'}`;
+  const months = Math.round(days / 30);
+  return `in ${months} month${months === 1 ? '' : 's'}`;
+}
+
 export const fmtBytes = (b) => {
   if (!b) return '0 KB';
   const u = ['B', 'KB', 'MB', 'GB'];
